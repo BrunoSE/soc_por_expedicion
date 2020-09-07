@@ -2,6 +2,7 @@ import MySQLdb
 import pandas as pd
 import logging
 import ftplib
+import os
 from datetime import timedelta
 from geopy import distance
 from time import sleep
@@ -267,17 +268,26 @@ def mezclar_data(fecha):
     return df196r_ef
 
 
-def main():
-    mesanno_out = 'ago20'
-    dia_ini = 24
-    dia_fin = 28
+def main(dia_ini, dia_fin, mesanno_out):
+    # Crear variable que escribe en log file de este dia
+    nombre_semana = f"{dia_ini}_{dia_fin}_{mesanno_out}"
+    if not os.path.isdir(nombre_semana):
+        os.mkdir(nombre_semana)
+    os.chdir(nombre_semana)
+
+    file_handler = logging.FileHandler(f'{nombre_semana}.log')
+
+    # no deja pasar los debug, solo info hasta critical
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(file_format)
+    logger.addHandler(file_handler)
+
     fechas_de_interes = []
     for i in range(dia_ini, dia_fin + 1):
         fechas_de_interes.append(f'2020-08-{i:02d}')
     logger.info(fechas_de_interes)
 
-    if True:
-        descargar_semana(fechas_de_interes)
+    descargar_semana(fechas_de_interes)
     fechas_de_interes = [x.replace('-', '_') for x in fechas_de_interes]
 
     logger.info(f'Sacando archivo de resumen para fechas: {fechas_de_interes}')
@@ -292,10 +302,11 @@ def main():
     df_f['Intervalo'] = pd.to_datetime(df_f['Intervalo'], errors='raise',
                                        format="%H:%M:%S")
 
-    df_f.to_excel(f'dataf_{dia_ini}_{dia_fin}_{mesanno_out}.xlsx', index=False)
-    df_f.to_parquet(f'dataf_{dia_ini}_{dia_fin}_{mesanno_out}.parquet', compression='gzip')
+    df_f.to_excel(f'dataf_{nombre_semana}.xlsx', index=False)
+    df_f.to_parquet(f'dataf_{nombre_semana}.parquet', compression='gzip')
+    logger.info('Listo todo')
 
 
 if __name__ == '__main__':
     logger = mantener_log()
-    main()
+    main(24, 28, 'ago20')
