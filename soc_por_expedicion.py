@@ -208,8 +208,8 @@ def descargar_semana_ftp(fechas):
         descargar_resumen_ftp(fecha_)
 
 
-def distancia_wgs84(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    return distance.distance((lat1, lon1), (lat2, lon2)).km
+def distancia_wgs84(lat1: float, lon1: float, lat2: float, lon2: float):
+    return 1000 * distance.distance((lat1, lon1), (lat2, lon2)).km
 
 
 def mezclar_data(fecha):
@@ -235,44 +235,63 @@ def mezclar_data(fecha):
     # logger.info(f"Expediciones con la ppu: {len(df196r.index)}")
 
     df = pd.read_parquet(f'data_{fecha}.parquet')
+
+    # cambiar valor por valor_soc
+    df.rename(columns={'valor': 'valor_soc'}, inplace=True)
+    # para que todas las columnas vengan renombradas
+    columnas_originales = df.columns
+    df.columns = columnas_originales + '_Ttec_ini'
+
     logger.info(f"Largo data tracktec: {len(df.index)}")
     # df = df.loc[df['patente'] == 'PFVC-40']
     # logger.info(f"Largo data tracktec con la ppu: {len(df.index)}")
-    df.sort_values(by=['fecha_hora_evento'], inplace=True)
+    df.sort_values(by=['fecha_hora_evento_Ttec_ini'], inplace=True)
     df196r.sort_values(by=['hora_inicio'], inplace=True)
 
-    df196r_e = pd.merge_asof(df196r, df, left_on='hora_inicio', right_on='fecha_hora_evento',
-                             left_by='PPU', right_by='patente', suffixes=['', '_Ttec'],
-                             tolerance=timedelta(minutes=1), direction='nearest')
-
-    # agregar primera y ultima posicion a mi resumen diario de gps
-    # df196r_e.apply(lambda x: distancia_wgs84(x[ultima_lat],
-    #                                          x[ultima_lon],
-    #                                          x['latitud'],
-    #                                          x['longitud']), axis=1)
-    df196r_e.rename(columns={'fecha_hora_evento': 'tiempo_soc_inicio',
-                             'valor': 'soc_inicio'}, inplace=True)
+    df196r_e = pd.merge_asof(df196r, df,
+                             left_on='hora_inicio',
+                             right_on='fecha_hora_evento_Ttec_ini',
+                             left_by='PPU', right_by='patente_Ttec_ini',
+                             suffixes=['', '_Ttec_ini2'],
+                             tolerance=timedelta(minutes=1),
+                             direction='nearest')
 
     df196r_e.sort_values(by=['hora_fin'], inplace=True)
+    df.columns = columnas_originales + '_Ttec_fin'
 
-    df196r_ef = pd.merge_asof(df196r_e, df, left_on='hora_fin', right_on='fecha_hora_evento',
-                              left_by='PPU', right_by='patente', suffixes=['', '_Ttec_fin'],
-                              tolerance=timedelta(minutes=1), direction='nearest')
+    df196r_ef = pd.merge_asof(df196r_e, df,
+                              left_on='hora_fin',
+                              right_on='fecha_hora_evento_Ttec_fin',
+                              left_by='PPU', right_by='patente_Ttec_fin',
+                              suffixes=['', '_Ttec_fin2'],
+                              tolerance=timedelta(minutes=1),
+                              direction='nearest')
 
-    df196r_ef.rename(columns={'fecha_hora_evento': 'tiempo_soc_fin',
-                              'valor': 'soc_fin'}, inplace=True)
-    df196r_ef['delta_soc'] = df196r_ef['soc_inicio'] - df196r_ef['soc_fin']
+    # agregar primera y ultima posicion a mi resumen diario de gps
+    df196r_e['d_registros_ini'] = df196r_e.apply(lambda x: distancia_wgs84(x['latitud_Ttec_ini'],
+                                                                           x['longitud_Ttec_ini'],
+                                                                           x['lat_ini'],
+                                                                           x['lon_ini']), axis=1)
 
+    df196r_e['d_registros_fin'] = df196r_e.apply(lambda x: distancia_wgs84(x['latitud_Ttec_fin'],
+                                                                           x['longitud_Ttec_fin'],
+                                                                           x['lat_fin'],
+                                                                           x['lon_fin']), axis=1)
+
+    df196r_ef['delta_soc'] = df196r_ef['valor_soc_Ttec_ini'] - df196r_ef['valor_soc_Ttec_fin']
     df196r_ef.sort_values(by=['PPU', 'hora_inicio'], inplace=True)
     df196r_ef.to_excel(f'data_196rE_{fecha}.xlsx', index=False)
+
     return df196r_ef
 
 
-def main(dia_ini, dia_fin, mesanno_out):
+def main(dia_ini, dia_fin, mesanno_out, replace=False):
     # Crear variable que escribe en log file de este dia
+    no_existia_semana = False
     nombre_semana = f"{dia_ini}_{dia_fin}_{mesanno_out}"
     if not os.path.isdir(nombre_semana):
         os.mkdir(nombre_semana)
+        no_existia_semana = True
     os.chdir(nombre_semana)
 
     file_handler = logging.FileHandler(f'{nombre_semana}.log')
@@ -285,23 +304,27 @@ def main(dia_ini, dia_fin, mesanno_out):
     fechas_de_interes = []
     for i in range(dia_ini, dia_fin + 1):
         fechas_de_interes.append(f'2020-08-{i:02d}')
-    logger.info(fechas_de_interes)
+    logger.info(f'Semana de interes: {fechas_de_interes}')
 
-    descargar_semana(fechas_de_interes)
+    if no_existia_semana or replace:
+        logger.info('Consultando servidor mysql por datos tracktec')
+        descargar_semana(fechas_de_interes)
     fechas_de_interes = [x.replace('-', '_') for x in fechas_de_interes]
 
-    logger.info(f'Sacando archivo de resumen para fechas: {fechas_de_interes}')
-    descargar_semana_ftp(fechas_de_interes)
+    if no_existia_semana or replace:
+        logger.info('Descargando archivos de resumen del FTP')
+        descargar_semana_ftp(fechas_de_interes)
 
     df_f = []
     for fi in fechas_de_interes:
-        logger.info(f'Mezclando data de fecha {fi}')
+        logger.info(f'Concatenando y mezclando data de fecha {fi}')
         df_f.append(mezclar_data(fi))
 
     df_f = pd.concat(df_f)
     df_f['Intervalo'] = pd.to_datetime(df_f['Intervalo'], errors='raise',
                                        format="%H:%M:%S")
 
+    df_f = df_f.loc[~(df_f['delta_soc'].isna())]
     df_f.to_excel(f'dataf_{nombre_semana}.xlsx', index=False)
     df_f.to_parquet(f'dataf_{nombre_semana}.parquet', compression='gzip')
     logger.info('Listo todo')
