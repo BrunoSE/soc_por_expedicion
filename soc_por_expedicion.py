@@ -209,6 +209,9 @@ def descargar_semana_ftp(fechas):
 
 
 def distancia_wgs84(lat1: float, lon1: float, lat2: float, lon2: float):
+    if pd.isna(lat1) or pd.isna(lon1) or pd.isna(lat2) or pd.isna(lon2):
+        return None
+
     return 1000 * distance.distance((lat1, lon1), (lat2, lon2)).km
 
 
@@ -268,15 +271,15 @@ def mezclar_data(fecha):
                               direction='nearest')
 
     # agregar primera y ultima posicion a mi resumen diario de gps
-    df196r_e['d_registros_ini'] = df196r_e.apply(lambda x: distancia_wgs84(x['latitud_Ttec_ini'],
-                                                                           x['longitud_Ttec_ini'],
-                                                                           x['lat_ini'],
-                                                                           x['lon_ini']), axis=1)
+    df196r_ef['d_registros_ini'] = df196r_ef.apply(lambda x: distancia_wgs84(x['latitud_Ttec_ini'],
+                                                                             x['longitud_Ttec_ini'],
+                                                                             x['lat_ini'],
+                                                                             x['lon_ini']), axis=1)
 
-    df196r_e['d_registros_fin'] = df196r_e.apply(lambda x: distancia_wgs84(x['latitud_Ttec_fin'],
-                                                                           x['longitud_Ttec_fin'],
-                                                                           x['lat_fin'],
-                                                                           x['lon_fin']), axis=1)
+    df196r_ef['d_registros_fin'] = df196r_ef.apply(lambda x: distancia_wgs84(x['latitud_Ttec_fin'],
+                                                                             x['longitud_Ttec_fin'],
+                                                                             x['lat_fin'],
+                                                                             x['lon_fin']), axis=1)
 
     df196r_ef['delta_soc'] = df196r_ef['valor_soc_Ttec_ini'] - df196r_ef['valor_soc_Ttec_fin']
     df196r_ef.sort_values(by=['PPU', 'hora_inicio'], inplace=True)
