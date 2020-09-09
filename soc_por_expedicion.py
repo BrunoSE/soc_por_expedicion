@@ -402,7 +402,7 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = True
-    pipeline(28, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     logger.info('Listo todo')
