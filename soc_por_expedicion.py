@@ -174,9 +174,9 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
                          AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
                  ) as te_final
                  where 
-                 valor_soc is not null or 
-                 valor_ptg is not null or 
-                 valor_ptc is not null
+                 valor_soc REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$' or 
+                 valor_ptg REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$' or 
+                 valor_ptc REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$'
                  order by patente;
                  """
                  )
@@ -251,30 +251,30 @@ def mezclar_data(fecha):
     servicios_de_interes = ['F41', 'F46', 'F48', 'F63c', 'F67e', 'F83c']
 
     df196r = pd.read_excel(f'Cruce_196resumen_data_{fecha}_revisado.xlsx')
-    logger.info(f"Expediciones iniciales: {len(df196r.index)}")
+    logger.info(f"Expediciones iniciales en resumen diario: {len(df196r.index)}")
     df196r = df196r.loc[df196r['Servicio'].isin(servicios_de_interes)]
-    df196r = df196r.loc[(df196r['Operativo'] == 'C')]
-    df196r = df196r.loc[(df196r['Cumple_Triada_Revisada'] == 1)]
-    df196r['pctje_dist_recorrida'] = df196r['distancia_recorrida'] / df196r['dist_Ruta']
-    df196r = df196r.loc[df196r.pctje_dist_recorrida > 0.85]
-    df196r = df196r.loc[df196r.pctje_dist_recorrida < 1.15]
-    # filtros que podria incluir:
+    # df196r = df196r.loc[(df196r['Operativo'] == 'C')]
+    # df196r = df196r.loc[(df196r['Cumple_Triada_Revisada'] == 1)]
+    # df196r['pctje_dist_recorrida'] = df196r['distancia_recorrida'] / df196r['dist_Ruta']
+    # df196r = df196r.loc[df196r.pctje_dist_recorrida > 0.85]
+    # df196r = df196r.loc[df196r.pctje_dist_recorrida < 1.15]
+    # filtros adicionales que podria incluir:
     # pulsos por minutos cercano a 2
     # tiempo con perdida transmision menor a 5 min
     # distancia con perdida de transmision menor a 1 km
     # no mas de 3 pulsos fuera de ruta
-
-    logger.info(f"Expediciones de interés: {len(df196r.index)}")
-    logger.info(f"{repr(df196r['Servicio_Sentido'].value_counts())}")
-    # df196r = df196r.loc[df196r['PPU'] == 'PFVC-40']
-    # logger.info(f"Expediciones con la ppu: {len(df196r.index)}")
 
     df = pd.read_parquet(f'data_{fecha}.parquet')
     # para que todas las columnas vengan renombradas
     columnas_originales = df.columns
     df.columns = columnas_originales + '_Ttec_ini'
 
+    # llevar log de info relevante
     logger.info(f"Largo data tracktec: {len(df.index)}")
+    logger.info(f"Número total de expediciones con SS relevantes: {len(df196r.index)}")
+    logger.info(f"Número de expediciones por SS:\n"
+                f"{repr(df196r['Servicio_Sentido'].value_counts())}")
+
     # df = df.loc[df['patente'] == 'PFVC-40']
     # logger.info(f"Largo data tracktec con la ppu: {len(df.index)}")
     df.sort_values(by=['fecha_hora_evento_Ttec_ini'], inplace=True)
@@ -311,8 +311,8 @@ def mezclar_data(fecha):
                                                                              x['lon_fin']), axis=1)
 
     df196r_ef['delta_soc'] = df196r_ef['valor_soc_Ttec_ini'] - df196r_ef['valor_soc_Ttec_fin']
-    df196r_ef['delta_Pcon'] = df196r_ef['valor_ptc_Ttec_ini'] - df196r_ef['valor_ptc_Ttec_fin']
-    df196r_ef['delta_Pgen'] = df196r_ef['valor_ptg_Ttec_fin'] - df196r_ef['valor_ptg_Ttec_ini']
+    df196r_ef['delta_Pcon'] = df196r_ef['valor_ptc_Ttec_fin'] - df196r_ef['valor_ptc_Ttec_ini']
+    df196r_ef['delta_Pgen'] = df196r_ef['valor_ptg_Ttec_ini'] - df196r_ef['valor_ptg_Ttec_fin']
     df196r_ef.sort_values(by=['PPU', 'hora_inicio'], inplace=True)
     df196r_ef.to_excel(f'data_196rE_{fecha}.xlsx', index=False)
 
