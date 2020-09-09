@@ -94,7 +94,10 @@ def procesar_datos_consulta(cursor):
     df_ = pd.DataFrame(datos, columns=[i[0] for i in cursor.description])
     df_.set_index('id', inplace=True)
     for columna in ['latitud', 'longitud', 'valor_soc', 'valor_ptg', 'valor_ptc']:
-        df_[columna] = pd.to_numeric(df_[columna])
+        try:
+            df_[columna] = pd.to_numeric(df_[columna])
+        except ValueError:
+            logger.exception(f'Error en columna {columna}')
 
     df_['fecha_hora_consulta'] = pd.to_datetime(df_['fecha_hora_consulta'], errors='raise',
                                                 format="%Y-%m-%d %H:%M:%S")
@@ -151,7 +154,8 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
                              as te1 left JOIN 
                                  (SELECT evento_id as evento_id_soc, nombre as nombre_soc, 
                                  valor as valor_soc FROM tracktec.telemetria_ 
-                                 WHERE (nombre = 'SOC')) as t_soc 
+                                 WHERE (nombre = 'SOC' and 
+                                        valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')) as t_soc 
                                  ON te1.id=t_soc.evento_id_soc 
                                  WHERE fecha_evento = '{fecha_dia}'
                                  AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
@@ -159,7 +163,8 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
                          ) as te2 left join
                              (SELECT evento_id as evento_id_ptg, nombre as nombre_ptg, 
                              valor as valor_ptg FROM tracktec.telemetria_ 
-                             WHERE (nombre = 'Potencia Total Generada')) as t_ptg 
+                             WHERE (nombre = 'Potencia Total Generada' and 
+                                    valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')) as t_ptg 
                              ON te2.id=t_ptg.evento_id_ptg 
                              WHERE fecha_evento = '{fecha_dia}'
                              AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
@@ -167,18 +172,19 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
                      ) as te3 left join 
                          (SELECT evento_id as evento_id_ptc, nombre as nombre_ptc, 
                          valor as valor_ptc FROM tracktec.telemetria_ 
-                         WHERE (nombre = 'Potencia Total Consumida')) as t_ptc 
+                         WHERE (nombre = 'Potencia Total Consumida' and 
+                                valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')) as t_ptc 
                          ON te3.id=t_ptc.evento_id_ptc 
                          WHERE fecha_evento = '{fecha_dia}'
                          AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
                          AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
                  ) as te_final
                  where 
-                 valor_soc REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$' or 
-                 valor_ptg REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$' or 
-                 valor_ptc REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$'
+                 valor_soc IS NOT NULL OR
+                 valor_ptg IS NOT NULL OR
+                 valor_ptc IS NOT NULL
                  order by patente;
-                 """
+                """
                  )
 
     df__ = procesar_datos_consulta(cur1)
@@ -195,6 +201,7 @@ def descargar_data_ttec(fecha__):
     # df = consultar_transmisiones_con_soc_por_semana('2020-08-20', '2020-08-20')
     dfx = consultar_transmisiones_tracktec_por_dia(fecha__)
     dfx.to_parquet(f'data_{fecha__2}.parquet', compression='gzip')
+    exit()
 
 
 def descargar_semana_ttec(fechas):
@@ -320,7 +327,7 @@ def mezclar_data(fecha):
     return df196r_ef
 
 
-def pipeline(dia_ini, mes, anno, replace=False):
+def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False):
     # Sacar fechas de interes a partir de lunes inicio de semana
     fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}').date()
     dia_de_la_semana = fecha_dia_ini.isoweekday()
@@ -350,6 +357,12 @@ def pipeline(dia_ini, mes, anno, replace=False):
         no_existia_semana = True
     else:
         logger.info(f'Se encontró carpeta {nombre_semana}')
+        if replace_resumen:
+            logger.info("Como replace_resumen=True se van a reemplazar los archivos resumen")
+        if replace_data_ttec:
+            logger.info("Como replace_data_ttec=True se van a reemplazar archivos parquet")
+        elif not replace_resumen:
+            logger.info("No se van a reemplazar archivos")
 
     os.chdir(nombre_semana)
 
@@ -360,12 +373,12 @@ def pipeline(dia_ini, mes, anno, replace=False):
     file_handler.setFormatter(file_format)
     logger.addHandler(file_handler)
 
-    if no_existia_semana or replace:
+    if no_existia_semana or replace_data_ttec:
         logger.info('Consultando servidor mysql por datos tracktec')
         descargar_semana_ttec(fechas_de_interes)
     fechas_de_interes = [x.replace('-', '_') for x in fechas_de_interes]
 
-    if no_existia_semana or replace:
+    if no_existia_semana or replace_resumen:
         logger.info('Descargando archivos de resumen del FTP')
         descargar_semana_ftp(fechas_de_interes)
 
@@ -386,7 +399,10 @@ def pipeline(dia_ini, mes, anno, replace=False):
 
 if __name__ == '__main__':
     logger = mantener_log()
-    pipeline(17, 8, 2020)
-    pipeline(24, 8, 2020)
-    pipeline(31, 8, 2020)
+
+    reemplazar_data_ttec = False
+    reemplazar_resumen = True
+    pipeline(28, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+
     logger.info('Listo todo')
