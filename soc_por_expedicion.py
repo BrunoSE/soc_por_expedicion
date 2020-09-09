@@ -253,6 +253,7 @@ def mezclar_data(fecha):
     df196r = pd.read_excel(f'Cruce_196resumen_data_{fecha}_revisado.xlsx')
     logger.info(f"Expediciones iniciales en resumen diario: {len(df196r.index)}")
     df196r = df196r.loc[df196r['Servicio'].isin(servicios_de_interes)]
+    df196r = df196r.loc[~(df196r['hora_inicio'].isna())]
     # df196r = df196r.loc[(df196r['Operativo'] == 'C')]
     # df196r = df196r.loc[(df196r['Cumple_Triada_Revisada'] == 1)]
     # df196r['pctje_dist_recorrida'] = df196r['distancia_recorrida'] / df196r['dist_Ruta']
