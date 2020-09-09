@@ -93,9 +93,9 @@ def procesar_datos_consulta(cursor):
     datos = [row for row in cursor.fetchall() if row[0] is not None]
     df_ = pd.DataFrame(datos, columns=[i[0] for i in cursor.description])
     df_.set_index('id', inplace=True)
-    df_['latitud'] = pd.to_numeric(df_['latitud'])
-    df_['longitud'] = pd.to_numeric(df_['longitud'])
-    df_['valor'] = pd.to_numeric(df_['valor'])
+    for columna in ['latitud', 'longitud', 'valor_soc', 'valor_ptg', 'valor_ptc']:
+        df_[columna] = pd.to_numeric(df_[columna])
+
     df_['fecha_hora_consulta'] = pd.to_datetime(df_['fecha_hora_consulta'], errors='raise',
                                                 format="%Y-%m-%d %H:%M:%S")
     df_['fecha_evento'] = pd.to_datetime(df_['fecha_evento'], errors='raise',
@@ -340,7 +340,7 @@ def pipeline(dia_ini, mes, anno, replace=False):
     # Crear variable que escribe en log file de este dia
     no_existia_semana = False
     el_dia_fin = fechas_de_interes[-1].split('-')[-1]
-    nombre_semana = f"semana_{fechas_de_interes[0]}_{el_dia_fin}"
+    nombre_semana = f"semana_{fechas_de_interes[0].replace('-', '_')}_{el_dia_fin}"
 
     # buscar si ya existia carpeta
     if not os.path.isdir(nombre_semana):
