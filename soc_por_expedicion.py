@@ -131,7 +131,7 @@ def consultar_transmisiones_con_soc_por_semana(fecha_inicial, fecha_final):
     return df__
 
 
-def consultar_transmisiones_con_soc_por_dia(fecha_dia):
+def consultar_transmisiones_tracktec_por_dia(fecha_dia):
     db1 = MySQLdb.connect(host=ip_bd_edu,
                           user="brunom",
                           passwd="Manzana",
@@ -139,14 +139,46 @@ def consultar_transmisiones_con_soc_por_dia(fecha_dia):
 
     cur1 = db1.cursor()
 
-    cur1.execute("SELECT * FROM tracktec.eventos AS t1 JOIN " +
-                 "(SELECT evento_id, nombre, valor FROM tracktec.telemetria_ " +
-                 "WHERE (nombre = 'SOC' AND valor IS NOT NULL)) as t2 " +
-                 "ON t1.id=t2.evento_id " +
-                 f"WHERE fecha_evento = '{fecha_dia}' " +
-                 "AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' " +
-                 "AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')" +
-                 "ORDER BY patente;"
+    cur1.execute(
+                 f"""
+                 select * from
+                 (
+                     select * from 
+                     (
+                         select * from
+                         (
+                             SELECT * FROM tracktec.eventos 
+                             as te1 left JOIN 
+                                 (SELECT evento_id as evento_id_soc, nombre as nombre_soc, 
+                                 valor as valor_soc FROM tracktec.telemetria_ 
+                                 WHERE (nombre = 'SOC')) as t_soc 
+                                 ON te1.id=t_soc.evento_id_soc 
+                                 WHERE fecha_evento = '{fecha_dia}'
+                                 AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
+                                 AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
+                         ) as te2 left join
+                             (SELECT evento_id as evento_id_ptg, nombre as nombre_ptg, 
+                             valor as valor_ptg FROM tracktec.telemetria_ 
+                             WHERE (nombre = 'Potencia Total Generada')) as t_ptg 
+                             ON te2.id=t_ptg.evento_id_ptg 
+                             WHERE fecha_evento = '{fecha_dia}'
+                             AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
+                             AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
+                     ) as te3 left join 
+                         (SELECT evento_id as evento_id_ptc, nombre as nombre_ptc, 
+                         valor as valor_ptc FROM tracktec.telemetria_ 
+                         WHERE (nombre = 'Potencia Total Consumida')) as t_ptc 
+                         ON te3.id=t_ptc.evento_id_ptc 
+                         WHERE fecha_evento = '{fecha_dia}'
+                         AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
+                         AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
+                 ) as te_final
+                 where 
+                 valor_soc is not null or 
+                 valor_ptg is not null or 
+                 valor_ptc is not null
+                 order by patente;
+                 """
                  )
 
     df__ = procesar_datos_consulta(cur1)
@@ -157,21 +189,21 @@ def consultar_transmisiones_con_soc_por_dia(fecha_dia):
     return df__
 
 
-def descargar_data(fecha__):
+def descargar_data_ttec(fecha__):
+    fecha__2 = fecha__.replace('-', '_')
     # logger.info(f"{consultar_soc_id(142339596)}")
     # df = consultar_transmisiones_con_soc_por_semana('2020-08-20', '2020-08-20')
-    dfx = consultar_transmisiones_con_soc_por_dia(fecha__)
-    fecha__ = fecha__.replace('-', '_')
-    dfx.to_parquet(f'data_{fecha__}.parquet', compression='gzip')
+    dfx = consultar_transmisiones_tracktec_por_dia(fecha__)
+    dfx.to_parquet(f'data_{fecha__2}.parquet', compression='gzip')
 
 
-def descargar_semana(fechas):
+def descargar_semana_ttec(fechas):
     for fecha_ in fechas:
-        logger.info(f"Descargando fecha {fecha_}")
-        descargar_data(fecha_)
+        logger.info(f"Descargando data Tracktec para fecha {fecha_}")
+        descargar_data_ttec(fecha_)
 
 
-def descargar_resumen_ftp(fecha_inicio, carpeta_destino=''):
+def descargar_resumen_ftp(fecha_inicio):
     direccion_resumen = ('Bruno/Data_PerdidaTransmision/' + fecha_inicio[:4] +
                          '/' + fecha_inicio[5:7] + '/' + fecha_inicio[-2:])
 
@@ -196,8 +228,8 @@ def descargar_resumen_ftp(fecha_inicio, carpeta_destino=''):
         except (TimeoutError, ConnectionResetError):
             sleep(30 * tt)
     else:
-        logger.warning('No se pudo conectar al servidor en ' +
-                    str(max_reintentos) + ' intentos.')
+        logger.warning(f'No se pudo conectar al servidor en '
+                       f'{max_reintentos} intentos.')
         raise TimeoutError
 
     logger.info('Listo.')
@@ -238,9 +270,6 @@ def mezclar_data(fecha):
     # logger.info(f"Expediciones con la ppu: {len(df196r.index)}")
 
     df = pd.read_parquet(f'data_{fecha}.parquet')
-
-    # cambiar valor por valor_soc
-    df.rename(columns={'valor': 'valor_soc'}, inplace=True)
     # para que todas las columnas vengan renombradas
     columnas_originales = df.columns
     df.columns = columnas_originales + '_Ttec_ini'
@@ -282,19 +311,45 @@ def mezclar_data(fecha):
                                                                              x['lon_fin']), axis=1)
 
     df196r_ef['delta_soc'] = df196r_ef['valor_soc_Ttec_ini'] - df196r_ef['valor_soc_Ttec_fin']
+    df196r_ef['delta_Pcon'] = df196r_ef['valor_ptc_Ttec_ini'] - df196r_ef['valor_ptc_Ttec_fin']
+    df196r_ef['delta_Pgen'] = df196r_ef['valor_ptg_Ttec_fin'] - df196r_ef['valor_ptg_Ttec_ini']
     df196r_ef.sort_values(by=['PPU', 'hora_inicio'], inplace=True)
     df196r_ef.to_excel(f'data_196rE_{fecha}.xlsx', index=False)
 
     return df196r_ef
 
 
-def main(dia_ini, dia_fin, mesanno_out, replace=False):
+def pipeline(dia_ini, mes, anno, replace=False):
+    # Sacar fechas de interes a partir de lunes inicio de semana
+    fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}').date()
+    dia_de_la_semana = fecha_dia_ini.isoweekday()
+    if dia_de_la_semana != 1:
+        logger.warning(f"Primer día no es lunes, numero: {dia_de_la_semana}")
+    if dia_de_la_semana > 5:
+        logger.error(f"Primer día es fin de semana, numero: {dia_de_la_semana}")
+        exit()
+
+    fechas_de_interes = []
+    # se buscan días de la semana entre fecha inicio y el viernes siguiente
+    for i in range(0, 6 - dia_de_la_semana):
+        fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=i))
+    fechas_de_interes = [x.strftime('%Y-%m-%d') for x in fechas_de_interes]
+
+    logger.info(f'Semana de interes: {fechas_de_interes}')
+
     # Crear variable que escribe en log file de este dia
     no_existia_semana = False
-    nombre_semana = f"{dia_ini}_{dia_fin}_{mesanno_out}"
+    el_dia_fin = fechas_de_interes[-1].split('-')[-1]
+    nombre_semana = f"semana_{fechas_de_interes[0]}_{el_dia_fin}"
+
+    # buscar si ya existia carpeta
     if not os.path.isdir(nombre_semana):
+        logger.info(f'Creando carpeta {nombre_semana}')
         os.mkdir(nombre_semana)
         no_existia_semana = True
+    else:
+        logger.info(f'Se encontró carpeta {nombre_semana}')
+
     os.chdir(nombre_semana)
 
     file_handler = logging.FileHandler(f'{nombre_semana}.log')
@@ -304,14 +359,9 @@ def main(dia_ini, dia_fin, mesanno_out, replace=False):
     file_handler.setFormatter(file_format)
     logger.addHandler(file_handler)
 
-    fechas_de_interes = []
-    for i in range(dia_ini, dia_fin + 1):
-        fechas_de_interes.append(f'2020-08-{i:02d}')
-    logger.info(f'Semana de interes: {fechas_de_interes}')
-
     if no_existia_semana or replace:
         logger.info('Consultando servidor mysql por datos tracktec')
-        descargar_semana(fechas_de_interes)
+        descargar_semana_ttec(fechas_de_interes)
     fechas_de_interes = [x.replace('-', '_') for x in fechas_de_interes]
 
     if no_existia_semana or replace:
@@ -327,7 +377,6 @@ def main(dia_ini, dia_fin, mesanno_out, replace=False):
     df_f['Intervalo'] = pd.to_datetime(df_f['Intervalo'], errors='raise',
                                        format="%H:%M:%S")
 
-    df_f = df_f.loc[~(df_f['delta_soc'].isna())]
     df_f.to_excel(f'dataf_{nombre_semana}.xlsx', index=False)
     df_f.to_parquet(f'dataf_{nombre_semana}.parquet', compression='gzip')
     logger.info('Listo todo')
@@ -335,4 +384,6 @@ def main(dia_ini, dia_fin, mesanno_out, replace=False):
 
 if __name__ == '__main__':
     logger = mantener_log()
-    main(24, 28, 'ago20')
+    pipeline(17, 8, 2020)
+    pipeline(24, 8, 2020)
+    pipeline(31, 8, 2020)
