@@ -379,7 +379,8 @@ def pipeline(dia_ini, mes, anno, replace=False):
 
     df_f.to_excel(f'dataf_{nombre_semana}.xlsx', index=False)
     df_f.to_parquet(f'dataf_{nombre_semana}.parquet', compression='gzip')
-    logger.info('Listo todo')
+    logger.info('Listo todo para esta semana')
+    os.chdir('..')
 
 
 if __name__ == '__main__':
@@ -387,3 +388,4 @@ if __name__ == '__main__':
     pipeline(17, 8, 2020)
     pipeline(24, 8, 2020)
     pipeline(31, 8, 2020)
+    logger.info('Listo todo')
