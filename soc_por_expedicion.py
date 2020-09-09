@@ -239,8 +239,6 @@ def descargar_resumen_ftp(fecha_inicio):
                        f'{max_reintentos} intentos.')
         raise TimeoutError
 
-    logger.info('Listo.')
-
 
 def descargar_semana_ftp(fechas):
     for fecha_ in fechas:
@@ -401,7 +399,7 @@ if __name__ == '__main__':
     logger = mantener_log()
 
     reemplazar_data_ttec = False
-    reemplazar_resumen = True
+    reemplazar_resumen = False
     pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
