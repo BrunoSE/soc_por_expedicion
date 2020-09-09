@@ -201,7 +201,6 @@ def descargar_data_ttec(fecha__):
     # df = consultar_transmisiones_con_soc_por_semana('2020-08-20', '2020-08-20')
     dfx = consultar_transmisiones_tracktec_por_dia(fecha__)
     dfx.to_parquet(f'data_{fecha__2}.parquet', compression='gzip')
-    exit()
 
 
 def descargar_semana_ttec(fechas):
@@ -400,7 +399,6 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     logger.info('Listo todo')
