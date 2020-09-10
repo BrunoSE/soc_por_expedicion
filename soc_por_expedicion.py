@@ -252,7 +252,8 @@ def distancia_wgs84(lat1: float, lon1: float, lat2: float, lon2: float):
 
 
 def mezclar_data(fecha):
-    servicios_de_interes = ['F41', 'F46', 'F48', 'F63c', 'F67e', 'F83c']
+    servicios_de_interes = ['F41', 'F46', 'F48', 'F63c', 'F67e', 'F83c',
+                            'F69', 'F73', 'F81']
 
     df196r = pd.read_excel(f'Cruce_196resumen_data_{fecha}_revisado.xlsx')
     logger.info(f"Expediciones iniciales en resumen diario: {len(df196r.index)}")
