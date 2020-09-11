@@ -24,6 +24,17 @@ dict_mh_date_str = dict(zip(mh_del_dia_str, mh_del_dia))
 # para crear groupby
 columnas_groupby = ['Servicio', 'Sentido', 'Servicio_Sentido', 'MH_inicio']
 
+# para plotear
+marcadores = ['circle', 'square', 'diamond', 'pentagon', 'triangle-up',
+              'triangle-down', 'cross', 'hexagon']
+
+colores_2 = [('#ff7f00', 'rgba(9, 112, 210, 0.9)'),
+             ('#0080FF', 'rgba(0, 128, 0, 0.9)'),
+             ('#008000', 'rgba(0, 128, 0, 0.9)'),
+             ('#000000', 'rgba(0, 0, 0, 0.9)')]
+
+marker_size = 10
+opacity = 0.6
 
 def mantener_log():
     global logger
@@ -109,14 +120,6 @@ def graficar(variable_graficar: str):
     df_var['Media Hora'] = df_var['MH_inicio'].map(dict_mh_date_str)
 
     # plotear
-    marcadores = ['circle', 'square', 'diamond', 'pentagon', 'triangle-up',
-                  'triangle-down', 'cross', 'hexagon']
-
-    colores_2 = [('#ff7f00', 'rgba(9, 112, 210, 0.2)'),
-                 ('#0080FF', 'rgba(0, 128, 0, 0.2)'),
-                 ('#008000', 'rgba(0, 128, 0, 0.2)'),
-                 ('#000000', 'rgba(0, 0, 0, 0.2)')]
-
     contador = 0
     df_cero = pd.DataFrame(mh_del_dia, columns=['Media Hora'])
     df_cero['Cero'] = 0
@@ -128,7 +131,7 @@ def graficar(variable_graficar: str):
         logger.info(f'Graficando {variable_graficar} {ss}')
         fig = go.Figure()
         # agregar un 0 para forzar mostrar el origen 0, 0
-        fig.add_trace(go.Scatter(x=df_cero['Media Hora'],
+        fig.add_trace(go.Scatter(x=df_cero['Media Hora'].dt.time,
                                  y=df_cero['Cero'],
                                  name="0",
                                  marker_color="white"))
@@ -139,35 +142,31 @@ def graficar(variable_graficar: str):
                        on='Media Hora')
 
         fig.add_trace(
-            go.Scatter(x=dfx['Media Hora'], y=dfx[vary[2]],
+            go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[2]],
                        name=f'percentil75',
                        mode='lines',
-                       connectgaps=False,
-                       opacity=0.5,
+                       connectgaps=True,
+                       opacity=opacity,
                        line_color=colores_2[contador % len(colores_2)][0]))
 
         fig.add_trace(
-            go.Scatter(x=dfx['Media Hora'], y=dfx[vary[1]],
+            go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[1]],
                        name=f'Mediana',
                        mode='lines+markers',
-                       connectgaps=False,
-                       marker=dict(size=7, symbol=marcadores[contador % len(marcadores)]),
+                       connectgaps=True,
+                       marker=dict(size=marker_size,
+                                   symbol=marcadores[contador % len(marcadores)]),
                        line_color=colores_2[contador % len(colores_2)][0]))
 
         fig.add_trace(
-            go.Scatter(x=dfx['Media Hora'], y=dfx[vary[0]],
+            go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[0]],
                        name=f'percentil25',
                        mode='lines',
-                       connectgaps=False,
-                       opacity=0.5,
+                       connectgaps=True,
+                       opacity=opacity,
                        line_color=colores_2[contador % len(colores_2)][0]))
 
         contador += 1
-
-        # Set x-axis title
-        fig.update_xaxes(title_text="Media Hora Despacho",
-                         showticklabels=True
-                         )
 
         # Set y-axes titles
         if variable_graficar == 'delta_soc':
@@ -200,9 +199,152 @@ def graficar(variable_graficar: str):
             )
             fig.update_yaxes(title_text="Potencia [kW]")
 
+        # Set x-axis title
+        fig.update_xaxes(title_text="Media Hora Despacho",
+                         showticklabels=True,
+                         type='category'
+                         )
+
         fig.write_html(f'grafico_{ss}_{variable_graficar}.html',
                        config={'scrollZoom': True, 'displayModeBar': True})
         fig.write_image(f'grafico_{ss}_{variable_graficar}.png', width=1600, height=800)
+
+
+def graficar_potencias():
+    global df_final
+    variable_graficar = 'delta_Pcon'
+    variable_graficar2 = 'delta_Pgen'
+    vary = [f'{variable_graficar}_25%',
+            f'{variable_graficar}_50%',
+            f'{variable_graficar}_75%']
+
+    vary2 = [f'{variable_graficar2}_25%',
+             f'{variable_graficar2}_50%',
+             f'{variable_graficar2}_75%']
+
+    columnas_de_interes = [x for x in columnas_groupby]
+    columnas_de_interes.append(variable_graficar)
+
+    columnas_de_interes2 = [x for x in columnas_groupby]
+    columnas_de_interes2.append(variable_graficar2)
+
+    df_var = df_final.loc[~(df_final[variable_graficar].isna()), columnas_de_interes]
+    df_var = df_var.groupby(by=columnas_groupby).describe().reset_index()
+    df_var.columns = ['_'.join(col).rstrip('_') for col in df_var.columns.values]
+    # describe entrega col_count, col_mean, col_std, col_min, col_max, col_50%, 25% y 75%
+    # pasar MH a datetime en una nueva columna
+    df_var = df_var.loc[df_var[f'{variable_graficar}_count'] > 2]
+    df_var['Media Hora'] = df_var['MH_inicio'].map(dict_mh_date_str)
+
+    df_var2 = df_final.loc[~(df_final[variable_graficar2].isna()), columnas_de_interes2]
+    df_var2 = df_var2.groupby(by=columnas_groupby).describe().reset_index()
+    df_var2.columns = ['_'.join(col).rstrip('_') for col in df_var2.columns.values]
+    # describe entrega col_count, col_mean, col_std, col_min, col_max, col_50%, 25% y 75%
+    # pasar MH a datetime en una nueva columna
+    df_var2 = df_var2.loc[df_var2[f'{variable_graficar2}_count'] > 2]
+    df_var2['Media Hora'] = df_var2['MH_inicio'].map(dict_mh_date_str)
+
+    # plotear
+    contador = 0
+    df_cero = pd.DataFrame(mh_del_dia, columns=['Media Hora'])
+    df_cero['Cero'] = 0
+    df_cero = df_cero.loc[df_cero['Media Hora'] >= df_var['Media Hora'].min()]
+    df_cero = df_cero.loc[df_cero['Media Hora'] <= df_var['Media Hora'].max()]
+
+    # iterar servicios
+    for ss in df_var['Servicio_Sentido'].unique():
+        logger.info(f'Graficando {variable_graficar} y {variable_graficar2} {ss}')
+        fig = go.Figure()
+        # agregar un 0 para forzar mostrar el origen 0, 0
+        fig.add_trace(go.Scatter(x=df_cero['Media Hora'].dt.time,
+                                 y=df_cero['Cero'],
+                                 name="0",
+                                 marker_color="white"))
+
+        dfx = pd.merge(df_cero[['Media Hora']],
+                       df_var.loc[df_var['Servicio_Sentido'] == ss],
+                       how='left',
+                       on='Media Hora')
+
+        fig.add_trace(
+            go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[2]],
+                       name=f'PC_percentil75',
+                       mode='lines',
+                       connectgaps=True,
+                       opacity=opacity,
+                       line_color=colores_2[contador % len(colores_2)][0]))
+
+        fig.add_trace(
+            go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[1]],
+                       name=f'PCons_Mediana',
+                       mode='lines+markers',
+                       connectgaps=True,
+                       marker=dict(size=marker_size,
+                                   symbol=marcadores[contador % len(marcadores)]),
+                       line_color=colores_2[contador % len(colores_2)][0]))
+
+        fig.add_trace(
+            go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[0]],
+                       name=f'PC_percentil25',
+                       mode='lines',
+                       connectgaps=True,
+                       opacity=opacity,
+                       line_color=colores_2[contador % len(colores_2)][0]))
+
+        contador += 1
+        dfx = pd.merge(df_cero[['Media Hora']],
+                       df_var2.loc[df_var2['Servicio_Sentido'] == ss],
+                       how='left',
+                       on='Media Hora')
+
+        fig.add_trace(
+            go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary2[2]],
+                       name=f'PG_percentil75',
+                       mode='lines',
+                       connectgaps=True,
+                       opacity=opacity,
+                       line_color=colores_2[contador % len(colores_2)][0]))
+
+        fig.add_trace(
+            go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary2[1]],
+                       name=f'PG_Mediana',
+                       mode='lines+markers',
+                       connectgaps=True,
+                       marker=dict(size=marker_size,
+                                   symbol=marcadores[contador % len(marcadores)]),
+                       line_color=colores_2[contador % len(colores_2)][0]))
+
+        fig.add_trace(
+            go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary2[0]],
+                       name=f'PGen_percentil25',
+                       mode='lines',
+                       connectgaps=True,
+                       opacity=opacity,
+                       line_color=colores_2[contador % len(colores_2)][0]))
+
+        contador += 1
+
+        # Add figure title
+        fig.update_layout(xaxis_tickformat='%H:%M',
+                          font=dict(size=16, color='#000000'),
+                          title=go.layout.Title(
+                              text=f"Potencia Consumida y Generada por expedición {ss}",
+                              font=dict(size=20, color='#000000'))
+                          )
+        # Set y-axes titles
+        fig.update_yaxes(title_text="Potencia [kW]")
+
+        # Set x-axis title
+        fig.update_xaxes(title_text="Media Hora Despacho",
+                         showticklabels=True,
+                         type='category'
+                         )
+
+        fig.write_html(f'grafico_{ss}_Potencias.html',
+                       config={'scrollZoom': True, 'displayModeBar': True}
+                       )
+        fig.write_image(f'grafico_{ss}_Potencias.png',
+                        width=1600, height=800)
 
 
 if __name__ == '__main__':
@@ -235,6 +377,5 @@ if __name__ == '__main__':
 
     os.chdir(carpeta_guardar_graficos)
     graficar('delta_soc')
-    graficar('delta_Pcon')
-    graficar('delta_Pgen')
+    graficar_potencias()
     logger.info('Listo todo')
