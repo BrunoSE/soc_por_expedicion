@@ -190,8 +190,9 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                        line_color=el_color))
 
         # Agregar bar plot abajo con numero de datos
-        fig.add_trace(go.Bar(x=dfx['Media Hora'].dt.time, y=dfx[vary[3]], opacity=0.95,
-                             width=[0.5] * len(dfx['Media Hora'].index), name='Nro Datos'),
+        # width=[0.5] * len(dfx['Media Hora'].index),
+        fig.add_trace(go.Bar(x=dfx['Media Hora'].dt.time, y=dfx[vary[3]],
+                             opacity=0.95, name='Nro Datos'),
                       row=2, col=1)
 
         # Set y-axes titles
@@ -202,6 +203,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                 font=dict(size=20, color='#000000')),
                 font=dict(size=16, color='#000000'),
                 xaxis_tickformat='%H:%M',
+                bargap=0.3
             )
             fig.update_yaxes(title_text="", tickformat=" %", row=1, col=1)
 
@@ -211,7 +213,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                 text=f"Potencia consumida por expedición {ss}",
                 font=dict(size=20, color='#000000')),
                 font=dict(size=16, color='#000000'),
-                xaxis_tickformat='%H:%M',
+                xaxis_tickformat='%H:%M'
             )
             fig.update_yaxes(title_text="Potencia [kW]", row=1, col=1)
 
@@ -221,18 +223,20 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                 text=f"Potencia generada por expedición {ss}",
                 font=dict(size=20, color='#000000')),
                 font=dict(size=14, color='#000000'),
-                xaxis_tickformat='%H:%M',
+                xaxis_tickformat='%H:%M'
             )
             fig.update_yaxes(title_text="Potencia [kW]", row=1, col=1)
 
         # Set x-axis title
         fig.update_xaxes(title_text="Numero de datos por media hora despacho",
                          showticklabels=False,
-                         type='category', row=2, col=1
+                         type='category',
+                         row=2, col=1
                          )
         fig.update_xaxes(
                          showticklabels=True,
-                         type='category', row=1, col=1
+                         type='category',
+                         row=1, col=1
                          )
 
         if filtrar_outliers_intercuartil:
