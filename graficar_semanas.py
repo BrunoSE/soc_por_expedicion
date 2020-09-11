@@ -24,18 +24,25 @@ dict_mh_date_str = dict(zip(mh_del_dia_str, mh_del_dia))
 
 # para crear groupby
 columnas_groupby = ['Servicio', 'Sentido', 'Servicio_Sentido', 'MH_inicio']
+minimos_datos_por_mh = 3
 
 # para plotear
 marcadores = ['circle', 'square', 'diamond', 'pentagon', 'triangle-up',
               'triangle-down', 'cross', 'hexagon']
 
-colores_2 = [('#ff7f00', 'rgba(9, 112, 210, 0.9)'),
-             ('#0080FF', 'rgba(0, 128, 0, 0.9)'),
-             ('#008000', 'rgba(0, 128, 0, 0.9)'),
-             ('#000000', 'rgba(0, 0, 0, 0.9)')]
+colores_2 = [('#ff7f00', 'rgba(9, 112, 210, 0.5)'),
+             ('#0080FF', 'rgba(0, 128, 0, 0.5)'),
+             ('#008000', 'rgba(0, 128, 0, 0.5)'),
+             ('#000000', 'rgba(0, 0, 0, 0.5)')]
 
-marker_size = 10
-opacity = 0.6
+marker_size = 11
+opacity_percentiles = 0.7
+opacity_barras = 0.6
+ancho_barras = 0.5
+ticks_para_barras = [5, 10, 15]
+texto_ticks_barras = [str(x) for x in ticks_para_barras]
+zoom_out_barras = 1.5  # mas grande implica barras de conteo mas pequeñas
+
 
 def mantener_log():
     global logger
@@ -118,7 +125,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
     df_var = df_fv.groupby(by=columnas_groupby).describe().reset_index()
     df_var.columns = ['_'.join(col).rstrip('_') for col in df_var.columns.values]
     # filtrar MH con menos de 3 datos
-    df_var = df_var.loc[df_var[f'{variable_graficar}_count'] > 2]
+    df_var = df_var.loc[df_var[f'{variable_graficar}_count'] >= minimos_datos_por_mh]
 
     if filtrar_outliers_intercuartil:
         df_var['IQR'] = df_var[vary[2]] - df_var[vary[0]]
@@ -133,7 +140,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
         df_var = df_fv.groupby(by=columnas_groupby).describe().reset_index()
         df_var.columns = ['_'.join(col).rstrip('_') for col in df_var.columns.values]
         # filtrar MH con menos de 2 datos
-        df_var = df_var.loc[df_var[f'{variable_graficar}_count'] > 2]
+        df_var = df_var.loc[df_var[f'{variable_graficar}_count'] >= minimos_datos_por_mh]
 
     # pasar MH a datetime en una nueva columna
     df_var['Media Hora'] = df_var['MH_inicio'].map(dict_mh_date_str)
@@ -148,11 +155,14 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
     if filtrar_outliers_intercuartil:
         nombre_cero = 's0'
 
+    max_data_count = df_var[vary[3]].max()
+    max_data_vary = df_var[vary[2]].max() + 0.005
+
     # iterar servicios
     for ss in df_var['Servicio_Sentido'].unique():
         el_color = colores_2[contador % len(colores_2)][0]
         logger.info(f'Graficando {variable_graficar} {ss}')
-        fig = make_subplots(rows=2, cols=1, row_heights=[0.85, 0.15])
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
         # agregar un 0 para forzar mostrar el origen 0, 0
         fig.add_trace(go.Scatter(x=df_cero['Media Hora'].dt.time,
                                  y=df_cero['Cero'],
@@ -169,7 +179,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                        name=f'percentil75',
                        mode='lines',
                        connectgaps=True,
-                       opacity=opacity,
+                       opacity=opacity_percentiles,
                        line_color=el_color))
 
         fig.add_trace(
@@ -186,36 +196,56 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                        name=f'percentil25',
                        mode='lines',
                        connectgaps=True,
-                       opacity=opacity,
+                       opacity=opacity_percentiles,
                        line_color=el_color))
 
         # Agregar bar plot abajo con numero de datos
-        # width=[0.5] * len(dfx['Media Hora'].index),
         fig.add_trace(go.Bar(x=dfx['Media Hora'].dt.time, y=dfx[vary[3]],
-                             opacity=0.95, name='Nro Datos'),
-                      row=2, col=1)
+                             marker=dict(color=el_color),
+                             opacity=opacity_barras,
+                             name='Nro Datos',
+                             width=[ancho_barras] * len(dfx['Media Hora'].index)),
+                      secondary_y=True)
 
-        # Set y-axes titles
+        # Formatear eje y secundario
+        fig.update_yaxes(title_text="",
+                         range=[0, int(max_data_count * zoom_out_barras)],
+                         showgrid=True,
+                         showticklabels=True,
+                         tickmode='array',
+                         tickvals=ticks_para_barras,
+                         ticktext=texto_ticks_barras,
+                         secondary_y=True)
+
+        # Set x-axis title
+        fig.update_xaxes(title_text="Nro Datos - Media hora despacho",
+                         showticklabels=True,
+                         type='category',
+                         )
+
         if variable_graficar == 'delta_soc':
             # Add figure title
             fig.update_layout(title=go.layout.Title(
                 text=f"Variación en %SOC por expedición {ss}",
                 font=dict(size=20, color='#000000')),
-                font=dict(size=16, color='#000000'),
+                font=dict(size=14, color='#000000'),
                 xaxis_tickformat='%H:%M',
-                bargap=0.3
             )
-            fig.update_yaxes(title_text="", tickformat=" %", row=1, col=1)
+            fig.update_yaxes(title_text="", tickformat=" %",
+                             range=[0, max_data_vary],
+                             secondary_y=False)
 
         elif variable_graficar == 'delta_Pcon':
             # Add figure title
             fig.update_layout(title=go.layout.Title(
                 text=f"Potencia consumida por expedición {ss}",
                 font=dict(size=20, color='#000000')),
-                font=dict(size=16, color='#000000'),
+                font=dict(size=14, color='#000000'),
                 xaxis_tickformat='%H:%M'
             )
-            fig.update_yaxes(title_text="Potencia [kW]", row=1, col=1)
+            fig.update_yaxes(title_text="Potencia [kW]",
+                             range=[0, max_data_vary],
+                             secondary_y=False)
 
         elif variable_graficar == 'delta_Pgen':
             # Add figure title
@@ -225,19 +255,9 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                 font=dict(size=14, color='#000000'),
                 xaxis_tickformat='%H:%M'
             )
-            fig.update_yaxes(title_text="Potencia [kW]", row=1, col=1)
-
-        # Set x-axis title
-        fig.update_xaxes(title_text="Numero de datos por media hora despacho",
-                         showticklabels=False,
-                         type='category',
-                         row=2, col=1
-                         )
-        fig.update_xaxes(
-                         showticklabels=True,
-                         type='category',
-                         row=1, col=1
-                         )
+            fig.update_yaxes(title_text="Potencia [kW]",
+                             range=[0, max_data_vary],
+                             secondary_y=False)
 
         if filtrar_outliers_intercuartil:
             fig.write_html(f'graf_{ss}_{variable_graficar}.html',
@@ -249,7 +269,6 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
             fig.write_image(f'grafico_{ss}_{variable_graficar}.png', width=1600, height=800)
 
         contador += 1
-        exit()
 
 
 def graficar_potencias():
@@ -313,7 +332,7 @@ def graficar_potencias():
                        name=f'PC_percentil75',
                        mode='lines',
                        connectgaps=True,
-                       opacity=opacity,
+                       opacity=opacity_percentiles,
                        line_color=colores_2[contador % len(colores_2)][0]))
 
         fig.add_trace(
@@ -330,7 +349,7 @@ def graficar_potencias():
                        name=f'PC_percentil25',
                        mode='lines',
                        connectgaps=True,
-                       opacity=opacity,
+                       opacity=opacity_percentiles,
                        line_color=colores_2[contador % len(colores_2)][0]))
 
         contador += 1
@@ -344,7 +363,7 @@ def graficar_potencias():
                        name=f'PG_percentil75',
                        mode='lines',
                        connectgaps=True,
-                       opacity=opacity,
+                       opacity=opacity_percentiles,
                        line_color=colores_2[contador % len(colores_2)][0]))
 
         fig.add_trace(
@@ -361,7 +380,7 @@ def graficar_potencias():
                        name=f'PGen_percentil25',
                        mode='lines',
                        connectgaps=True,
-                       opacity=opacity,
+                       opacity=opacity_percentiles,
                        line_color=colores_2[contador % len(colores_2)][0]))
 
         contador += 1
