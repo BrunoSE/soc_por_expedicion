@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import datetime
 import logging
 global logger
@@ -102,21 +103,39 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False)
     ultima_semana = nombre_semana
 
 
-def graficar(variable_graficar: str):
+def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True):
     global df_final
     vary = [f'{variable_graficar}_25%',
             f'{variable_graficar}_50%',
-            f'{variable_graficar}_75%']
+            f'{variable_graficar}_75%',
+            f'{variable_graficar}_count']
 
     columnas_de_interes = [x for x in columnas_groupby]
     columnas_de_interes.append(variable_graficar)
 
-    df_var = df_final.loc[~(df_final[variable_graficar].isna()), columnas_de_interes]
-    df_var = df_var.groupby(by=columnas_groupby).describe().reset_index()
-    df_var.columns = ['_'.join(col).rstrip('_') for col in df_var.columns.values]
+    df_fv = df_final.loc[~(df_final[variable_graficar].isna()), columnas_de_interes]
     # describe entrega col_count, col_mean, col_std, col_min, col_max, col_50%, 25% y 75%
-    # pasar MH a datetime en una nueva columna
+    df_var = df_fv.groupby(by=columnas_groupby).describe().reset_index()
+    df_var.columns = ['_'.join(col).rstrip('_') for col in df_var.columns.values]
+    # filtrar MH con menos de 3 datos
     df_var = df_var.loc[df_var[f'{variable_graficar}_count'] > 2]
+
+    if filtrar_outliers_intercuartil:
+        df_var['IQR'] = df_var[vary[2]] - df_var[vary[0]]
+        df_var['cota_inf'] = df_var[vary[0]] - 1.5 * df_var['IQR']
+        df_var['cota_sup'] = df_var[vary[2]] + 1.5 * df_var['IQR']
+        for row in zip(df_var['MH_inicio'], df_var['Servicio_Sentido'],
+                       df_var['cota_inf'], df_var['cota_sup']):
+            select1 = ((df_fv['MH_inicio'] == row[0]) & (df_fv['Servicio_Sentido'] == row[1]))
+            select2 = ((df_fv[variable_graficar] >= row[2]) & (df_fv[variable_graficar] <= row[3]))
+            df_fv = df_fv.loc[((select1 & select2) | (~select1))]
+
+        df_var = df_fv.groupby(by=columnas_groupby).describe().reset_index()
+        df_var.columns = ['_'.join(col).rstrip('_') for col in df_var.columns.values]
+        # filtrar MH con menos de 2 datos
+        df_var = df_var.loc[df_var[f'{variable_graficar}_count'] > 2]
+
+    # pasar MH a datetime en una nueva columna
     df_var['Media Hora'] = df_var['MH_inicio'].map(dict_mh_date_str)
 
     # plotear
@@ -125,15 +144,19 @@ def graficar(variable_graficar: str):
     df_cero['Cero'] = 0
     df_cero = df_cero.loc[df_cero['Media Hora'] >= df_var['Media Hora'].min()]
     df_cero = df_cero.loc[df_cero['Media Hora'] <= df_var['Media Hora'].max()]
+    nombre_cero = '0'
+    if filtrar_outliers_intercuartil:
+        nombre_cero = 's0'
 
     # iterar servicios
     for ss in df_var['Servicio_Sentido'].unique():
+        el_color = colores_2[contador % len(colores_2)][0]
         logger.info(f'Graficando {variable_graficar} {ss}')
-        fig = go.Figure()
+        fig = make_subplots(rows=2, cols=1, row_heights=[0.85, 0.15])
         # agregar un 0 para forzar mostrar el origen 0, 0
         fig.add_trace(go.Scatter(x=df_cero['Media Hora'].dt.time,
                                  y=df_cero['Cero'],
-                                 name="0",
+                                 name=nombre_cero,
                                  marker_color="white"))
 
         dfx = pd.merge(df_cero[['Media Hora']],
@@ -147,7 +170,7 @@ def graficar(variable_graficar: str):
                        mode='lines',
                        connectgaps=True,
                        opacity=opacity,
-                       line_color=colores_2[contador % len(colores_2)][0]))
+                       line_color=el_color))
 
         fig.add_trace(
             go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[1]],
@@ -156,7 +179,7 @@ def graficar(variable_graficar: str):
                        connectgaps=True,
                        marker=dict(size=marker_size,
                                    symbol=marcadores[contador % len(marcadores)]),
-                       line_color=colores_2[contador % len(colores_2)][0]))
+                       line_color=el_color))
 
         fig.add_trace(
             go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[0]],
@@ -164,9 +187,12 @@ def graficar(variable_graficar: str):
                        mode='lines',
                        connectgaps=True,
                        opacity=opacity,
-                       line_color=colores_2[contador % len(colores_2)][0]))
+                       line_color=el_color))
 
-        contador += 1
+        # Agregar bar plot abajo con numero de datos
+        fig.add_trace(go.Bar(x=dfx['Media Hora'].dt.time, y=dfx[vary[3]], opacity=0.95,
+                             width=[0.5] * len(dfx['Media Hora'].index), name='Nro Datos'),
+                      row=2, col=1)
 
         # Set y-axes titles
         if variable_graficar == 'delta_soc':
@@ -177,7 +203,7 @@ def graficar(variable_graficar: str):
                 font=dict(size=16, color='#000000'),
                 xaxis_tickformat='%H:%M',
             )
-            fig.update_yaxes(title_text="", tickformat=" %")
+            fig.update_yaxes(title_text="", tickformat=" %", row=1, col=1)
 
         elif variable_graficar == 'delta_Pcon':
             # Add figure title
@@ -187,27 +213,39 @@ def graficar(variable_graficar: str):
                 font=dict(size=16, color='#000000'),
                 xaxis_tickformat='%H:%M',
             )
-            fig.update_yaxes(title_text="Potencia [kW]")
+            fig.update_yaxes(title_text="Potencia [kW]", row=1, col=1)
 
         elif variable_graficar == 'delta_Pgen':
             # Add figure title
             fig.update_layout(title=go.layout.Title(
                 text=f"Potencia generada por expedición {ss}",
                 font=dict(size=20, color='#000000')),
-                font=dict(size=16, color='#000000'),
+                font=dict(size=14, color='#000000'),
                 xaxis_tickformat='%H:%M',
             )
-            fig.update_yaxes(title_text="Potencia [kW]")
+            fig.update_yaxes(title_text="Potencia [kW]", row=1, col=1)
 
         # Set x-axis title
-        fig.update_xaxes(title_text="Media Hora Despacho",
+        fig.update_xaxes(title_text="Numero de datos por media hora despacho",
+                         showticklabels=False,
+                         type='category', row=2, col=1
+                         )
+        fig.update_xaxes(
                          showticklabels=True,
-                         type='category'
+                         type='category', row=1, col=1
                          )
 
-        fig.write_html(f'grafico_{ss}_{variable_graficar}.html',
-                       config={'scrollZoom': True, 'displayModeBar': True})
-        fig.write_image(f'grafico_{ss}_{variable_graficar}.png', width=1600, height=800)
+        if filtrar_outliers_intercuartil:
+            fig.write_html(f'graf_{ss}_{variable_graficar}.html',
+                           config={'scrollZoom': True, 'displayModeBar': True})
+            fig.write_image(f'graf_{ss}_{variable_graficar}.png', width=1600, height=800)
+        else:
+            fig.write_html(f'grafico_{ss}_{variable_graficar}.html',
+                           config={'scrollZoom': True, 'displayModeBar': True})
+            fig.write_image(f'grafico_{ss}_{variable_graficar}.png', width=1600, height=800)
+
+        contador += 1
+        exit()
 
 
 def graficar_potencias():
@@ -377,5 +415,5 @@ if __name__ == '__main__':
 
     os.chdir(carpeta_guardar_graficos)
     graficar('delta_soc')
-    graficar_potencias()
+    # graficar_potencias()
     logger.info('Listo todo')
