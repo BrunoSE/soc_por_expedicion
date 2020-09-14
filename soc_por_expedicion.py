@@ -327,7 +327,7 @@ def mezclar_data(fecha):
 
 def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False):
     # Sacar fechas de interes a partir de lunes inicio de semana
-    fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}').date()
+    fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}', dayfirst=True).date()
     dia_de_la_semana = fecha_dia_ini.isoweekday()
     if dia_de_la_semana != 1:
         logger.warning(f"Primer día no es lunes, numero: {dia_de_la_semana}")
@@ -400,6 +400,7 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     logger.info('Listo todo')
+
