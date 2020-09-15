@@ -69,7 +69,7 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False)
     global ultima_semana
 
     # Sacar fechas de interes a partir de lunes inicio de semana
-    fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}').date()
+    fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}', dayfirst=True).date()
     dia_de_la_semana = fecha_dia_ini.isoweekday()
     if dia_de_la_semana != 1:
         logger.warning(f"Primer día no es lunes, numero: {dia_de_la_semana}")
@@ -484,6 +484,7 @@ if __name__ == '__main__':
     pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     logger.info('Graficando')
     df_final = pd.concat(df_final)
@@ -502,7 +503,7 @@ if __name__ == '__main__':
         logger.warning(f'Reescribiendo sobre carpeta {carpeta_guardar_graficos}')
 
     os.chdir(carpeta_guardar_graficos)
-    # graficar('delta_soc')
+    graficar('delta_soc')
     # graficar('delta_Pcon')
     # graficar('delta_Pgen')
     graficar_potencias_2('delta_Pcon', 'delta_Pgen')
