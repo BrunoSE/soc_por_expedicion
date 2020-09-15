@@ -174,9 +174,7 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
                              y=df_fv2[variable_graficar],
                              notched=False,
                              name='Boxplot',
-                             boxpoints='all',
-                             jitter=0.1,
-                             pointpos=-1,
+                             boxpoints=False,
                              marker_color=el_color))
 
         # Set x-axis title
