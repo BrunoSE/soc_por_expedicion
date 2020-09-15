@@ -177,6 +177,7 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
                              boxpoints=False,
                              marker_color=el_color))
 
+        contador += 1
         # Set x-axis title
         fig.update_xaxes(showticklabels=True,
                          tickangle=270
