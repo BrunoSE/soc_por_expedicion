@@ -191,7 +191,7 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
 
         texto_titulo = f"Variación en %SOC por expedición {ss}"
         if variable_graficar == 'delta_soc':
-            fig.update_yaxes(title_text="", tickformat=" %",
+            fig.update_yaxes(title_text="", tickformat=".1%",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal)
 
@@ -352,7 +352,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
 
         texto_titulo = f"Variación en %SOC por expedición {ss}"
         if variable_graficar == 'delta_soc':
-            fig.update_yaxes(title_text="", tickformat=" %",
+            fig.update_yaxes(title_text="", tickformat=".1%",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
@@ -626,9 +626,9 @@ if __name__ == '__main__':
     os.chdir(carpeta_guardar_graficos)
     df_final.to_excel(f'data_{carpeta_guardar_graficos}.xlsx', index=False)
     df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
-    graficar_boxplot('delta_soc')
-    # graficar('delta_soc')
+    # graficar_boxplot('delta_soc')
+    graficar('delta_soc')
     # graficar('delta_Pcon')
     # graficar('delta_Pgen')
-    # graficar_potencias_2('delta_Pcon', 'delta_Pgen')
+    graficar_potencias_2('delta_Pcon', 'delta_Pgen')
     logger.info('Listo todo')
