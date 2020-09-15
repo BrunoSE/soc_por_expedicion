@@ -173,9 +173,10 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
         fig.add_trace(go.Box(x=df_fv2['Media Hora'].dt.time,
                              y=df_fv2[variable_graficar],
                              notched=False,
+                             name='Boxplot',
                              boxpoints='all',
                              jitter=0.1,
-                             pointpos=-0.5,
+                             pointpos=-1,
                              marker_color=el_color))
 
         # Set x-axis title
