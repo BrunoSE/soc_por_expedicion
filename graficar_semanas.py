@@ -146,6 +146,12 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
             select2 = ((df_fv[variable_graficar] >= row[2]) & (df_fv[variable_graficar] <= row[3]))
             df_fv = df_fv.loc[((select1 & select2) | (~select1))]
 
+    df_fv2 = df_fv.copy()
+    for ss in df_fv2['Servicio_Sentido'].unique():
+        for mh in df_fv2.loc[df_fv2['Servicio_Sentido'] == ss, 'MH_inicio'].unique():
+            if len(df_fv2.loc[((df_fv2['Servicio_Sentido'] == ss) &
+                               (df_fv2['MH_inicio'] == mh))].index) < minimos_datos_por_mh:
+                df_fv = df_fv.loc[((df_fv['Servicio_Sentido'] != ss) | (df_fv['MH_inicio'] != mh))]
     # pasar MH a datetime en una nueva columna
     df_fv['Media Hora'] = df_fv['MH_inicio'].map(dict_mh_date_str)
     contador = 0
@@ -618,6 +624,8 @@ if __name__ == '__main__':
         logger.warning(f'Reescribiendo sobre carpeta {carpeta_guardar_graficos}')
 
     os.chdir(carpeta_guardar_graficos)
+    df_final.to_excel(f'data_{carpeta_guardar_graficos}.xlsx', index=False)
+    df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
     graficar_boxplot('delta_soc')
     # graficar('delta_soc')
     # graficar('delta_Pcon')
