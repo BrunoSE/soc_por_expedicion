@@ -63,7 +63,7 @@ def mantener_log():
     return logger
 
 
-def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False):
+def g_pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False):
     global df_final
     global primera_semana
     global ultima_semana
@@ -106,6 +106,15 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False)
     df = df.loc[df['d_registros_ini'] < 1000]
     df = df.loc[df['d_registros_fin'] < 1000]
 
+    # Transformar soc a porcentaje y potencias a kW
+    df['delta_soc'] = df['delta_soc'] * 0.01
+    df['delta_Pcon'] = df['delta_Pcon'] * 0.001
+    df['delta_Pgen'] = df['delta_Pgen'] * 0.001
+
+    df = df.loc[df['delta_soc'] > 0]
+    df = df.loc[df['delta_Pcon'] > 0]
+    df = df.loc[df['delta_Pgen'] > 0]
+
     if not df_final:
         primera_semana = nombre_semana
 
@@ -114,6 +123,7 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False)
 
 
 def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool = True):
+    # para cada ss grafica boxplot por mh de dos variables
     if not os.path.isdir(f'boxplot_{variable_graficar}'):
         logger.info(f'Creando carpeta boxplot_{variable_graficar}')
         os.mkdir(f'boxplot_{variable_graficar}')
@@ -231,6 +241,7 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
 
 
 def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True):
+    # para cada ss grafica mediana y percentiles 25 y 75 por mh de una variable
     if not os.path.isdir(variable_graficar):
         logger.info(f'Creando carpeta {variable_graficar}')
         os.mkdir(variable_graficar)
@@ -396,7 +407,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
 
 def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
                          filtrar_outliers_intercuartil: bool = True):
-
+    # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
     if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}'):
         logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}')
         os.mkdir(f'{variable_graficar}_{variable_graficar_2}')
@@ -600,22 +611,12 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
-    logger.info('Graficando')
     df_final = pd.concat(df_final)
-    # Transformar soc a porcentaje y potencias a kW
-    df_final['delta_soc'] = df_final['delta_soc'] * 0.01
-    df_final['delta_Pcon'] = df_final['delta_Pcon'] * 0.001
-    df_final['delta_Pgen'] = df_final['delta_Pgen'] * 0.001
-
-    df_final = df_final.loc[df_final['delta_soc'] > 0]
-    df_final = df_final.loc[df_final['delta_Pcon'] > 0]
-    df_final = df_final.loc[df_final['delta_Pgen'] > 0]
-
     sem_primera = primera_semana.replace('semana_', '')[:-3]
     sem_ultima = ultima_semana.replace('semana_', '')[:-3]
     carpeta_guardar_graficos = f'graficos_{sem_primera}_{sem_ultima}'
@@ -629,6 +630,8 @@ if __name__ == '__main__':
     os.chdir(carpeta_guardar_graficos)
     df_final.to_excel(f'data_{carpeta_guardar_graficos}.xlsx', index=False)
     df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
+    logger.info('Graficando')
+
     # graficar_boxplot('delta_soc')
     graficar('delta_soc')
     # graficar('delta_Pcon')

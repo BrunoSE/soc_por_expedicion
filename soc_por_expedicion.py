@@ -411,4 +411,3 @@ if __name__ == '__main__':
     pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     logger.info('Listo todo')
-
