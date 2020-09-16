@@ -101,8 +101,10 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False)
     df = df.loc[(df['Operativo'] == 'C')]
     df = df.loc[(df['Cumple_Triada_Revisada'] == 1)]
     df['pctje_dist_recorrida'] = df['distancia_recorrida'] / df['dist_Ruta']
-    df = df.loc[df.pctje_dist_recorrida > 0.85]
-    df = df.loc[df.pctje_dist_recorrida < 1.15]
+    df = df.loc[df['pctje_dist_recorrida'] > 0.85]
+    df = df.loc[df['pctje_dist_recorrida'] < 1.15]
+    df = df.loc[df['d_registros_ini'] < 1000]
+    df = df.loc[df['d_registros_fin'] < 1000]
 
     if not df_final:
         primera_semana = nombre_semana

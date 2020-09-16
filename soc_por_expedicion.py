@@ -184,7 +184,7 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
                  valor_ptg IS NOT NULL OR
                  valor_ptc IS NOT NULL
                  order by patente;
-                """
+                 """
                  )
 
     df__ = procesar_datos_consulta(cur1)
