@@ -214,13 +214,14 @@ def descargar_semana_ttec(fechas):
         descargar_data_ttec(fecha_)
 
 
-def descargar_resumen_ftp(fecha_inicio):
+def descargar_resumen_ftp(fecha_inicio, descargar_data_gps=False):
     direccion_resumen = ('Bruno/Data_PerdidaTransmision/' + fecha_inicio[:4] +
                          '/' + fecha_inicio[5:7] + '/' + fecha_inicio[-2:])
 
     fecha_inicio = fecha_inicio.replace('-', '_')
     extension_archivo = '_revisado.xlsx'
     filename = 'Cruce_196resumen_data_' + fecha_inicio + extension_archivo
+    filename_gps = 'data_' + fecha_inicio + '.parquet'
 
     hostname = '192.168.11.101'
     username = 'bruno'
@@ -234,6 +235,8 @@ def descargar_resumen_ftp(fecha_inicio):
             ftp.login(username, passw)
             ftp.cwd(direccion_resumen)
             ftp.retrbinary("RETR " + filename, open(filename, 'wb').write)
+            if descargar_data_gps:
+                ftp.retrbinary("RETR " + filename_gps, open(filename_gps, 'wb').write)
             ftp.quit()
             break
         except (TimeoutError, ConnectionResetError):
