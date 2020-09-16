@@ -607,6 +607,7 @@ if __name__ == '__main__':
 
     logger.info('Graficando')
     df_final = pd.concat(df_final)
+    # Transformar soc a porcentaje y potencias a kW
     df_final['delta_soc'] = df_final['delta_soc'] * 0.01
     df_final['delta_Pcon'] = df_final['delta_Pcon'] * 0.001
     df_final['delta_Pgen'] = df_final['delta_Pgen'] * 0.001
