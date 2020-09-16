@@ -205,7 +205,7 @@ def descargar_data_ttec(fecha__):
     # logger.info(f"{consultar_soc_id(142339596)}")
     # df = consultar_soc_ttec('2020-08-20')
     dfx = consultar_transmisiones_tracktec_por_dia(fecha__)
-    dfx.to_parquet(f'data_{fecha__2}.parquet', compression='gzip')
+    dfx.to_parquet(f'data_Ttec_{fecha__2}.parquet', compression='gzip')
 
 
 def descargar_semana_ttec(fechas):
@@ -282,7 +282,7 @@ def mezclar_data(fecha):
     # filtrar por valores delta_ soc potencia > 0 (positivos no-nulos)
     # distancia dato Tracktec a registro gps Sonda asignado < 1km
 
-    df = pd.read_parquet(f'data_{fecha}.parquet')
+    df = pd.read_parquet(f'data_Ttec_{fecha}.parquet')
     # para que todas las columnas vengan renombradas
     columnas_originales = df.columns
     df.columns = columnas_originales + '_Ttec_ini'
