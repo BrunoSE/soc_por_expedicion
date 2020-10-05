@@ -332,6 +332,9 @@ def mezclar_data(fecha):
     df196r_ef['delta_Pcon'] = df196r_ef['valor_ptc_Ttec_fin'] - df196r_ef['valor_ptc_Ttec_ini']
     df196r_ef['delta_Pgen'] = df196r_ef['valor_ptg_Ttec_ini'] - df196r_ef['valor_ptg_Ttec_fin']
     df196r_ef.sort_values(by=['PPU', 'hora_inicio'], inplace=True)
+    df196r_ef['Intervalo'] = pd.to_datetime(df196r_ef['Intervalo'], errors='raise',
+                                            format="%H:%M:%S")
+
     df196r_ef.to_parquet(f'data_196rE_{fecha}.parquet', compression='gzip')
 
     return df196r_ef
@@ -343,7 +346,12 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
     fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}', dayfirst=True).date()
     dia_de_la_semana = fecha_dia_ini.isoweekday()
     if dia_de_la_semana != 1:
-        logger.warning(f"Primer día no es lunes, numero: {dia_de_la_semana}")
+        if not sem_especial:
+            logger.warning(f"Primer día no es lunes, numero: {dia_de_la_semana}")
+        else:
+            logger.error(f"Primer día no es lunes y se quiere ocupar parámetro sem_especial, "
+                         f"numero dia_ini: {dia_de_la_semana}")
+            exit()
     if dia_de_la_semana > 5:
         logger.error(f"Primer día es fin de semana, numero: {dia_de_la_semana}")
         exit()
@@ -410,8 +418,6 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
         df_f.append(mezclar_data(fi))
 
     df_f = pd.concat(df_f)
-    df_f['Intervalo'] = pd.to_datetime(df_f['Intervalo'], errors='raise',
-                                       format="%H:%M:%S")
 
     df_f.to_parquet(f'dataf_{nombre_semana}.parquet', compression='gzip')
     logger.info('Listo todo para esta semana')

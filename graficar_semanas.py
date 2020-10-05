@@ -63,7 +63,8 @@ def mantener_log():
     return logger
 
 
-def g_pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False):
+def g_pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False, sem_especial=[]):
+    # dia_ini tiene que ser un día lunes si se ocupa sem_especial
     global df_final
     global primera_semana
     global ultima_semana
@@ -72,15 +73,31 @@ def g_pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=Fals
     fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}', dayfirst=True).date()
     dia_de_la_semana = fecha_dia_ini.isoweekday()
     if dia_de_la_semana != 1:
-        logger.warning(f"Primer día no es lunes, numero: {dia_de_la_semana}")
+        if not sem_especial:
+            logger.warning(f"Primer día no es lunes, numero: {dia_de_la_semana}")
+        else:
+            logger.error(f"Primer día no es lunes y se quiere ocupar parámetro sem_especial, "
+                         f"numero dia_ini: {dia_de_la_semana}")
+            exit()
     if dia_de_la_semana > 5:
         logger.error(f"Primer día es fin de semana, numero: {dia_de_la_semana}")
         exit()
 
     fechas_de_interes = []
     # se buscan días de la semana entre fecha inicio y el viernes siguiente
-    for i in range(0, 6 - dia_de_la_semana):
-        fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=i))
+    if not sem_especial:
+        for i in range(0, 6 - dia_de_la_semana):
+            fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=i))
+    else:
+        if len(sem_especial) != len(set(sem_especial)):
+            logger.error(f"Semana especial no debe repetir números: {sem_especial}")
+            exit()
+        for i in sem_especial:
+            if 0 < i < 8:
+                fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=(i - 1)))
+            else:
+                logger.error(f"Semana especial debe ser lista con números 1 al 7: {sem_especial}")
+                exit()
 
     fechas_de_interes = [x.strftime('%Y-%m-%d') for x in fechas_de_interes]
 
@@ -615,6 +632,10 @@ if __name__ == '__main__':
     g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
+    g_pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     df_final = pd.concat(df_final)
     sem_primera = primera_semana.replace('semana_', '')[:-3]
