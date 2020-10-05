@@ -337,7 +337,8 @@ def mezclar_data(fecha):
     return df196r_ef
 
 
-def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False):
+def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False, sem_especial=[]):
+    # dia_ini tiene que ser un día lunes si se ocupa sem_especial
     # Sacar fechas de interes a partir de lunes inicio de semana
     fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}', dayfirst=True).date()
     dia_de_la_semana = fecha_dia_ini.isoweekday()
@@ -349,8 +350,19 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False)
 
     fechas_de_interes = []
     # se buscan días de la semana entre fecha inicio y el viernes siguiente
-    for i in range(0, 6 - dia_de_la_semana):
-        fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=i))
+    if not sem_especial:
+        for i in range(0, 6 - dia_de_la_semana):
+            fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=i))
+    else:
+        if len(sem_especial) != len(set(sem_especial)):
+            logger.error(f"Semana especial no debe repetir números: {sem_especial}")
+            exit()
+        for i in sem_especial:
+            if 0 < i < 8:
+                fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=(i - 1)))
+            else:
+                logger.error(f"Semana especial debe ser lista con números 1 al 7: {sem_especial}")
+                exit()
     fechas_de_interes = [x.strftime('%Y-%m-%d') for x in fechas_de_interes]
 
     logger.info(f'Semana de interes: {fechas_de_interes}')
@@ -411,7 +423,7 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
     pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     logger.info('Listo todo')
