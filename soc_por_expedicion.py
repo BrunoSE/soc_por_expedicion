@@ -108,7 +108,7 @@ def procesar_datos_consulta(cursor):
     return df_
 
 
-def consultar_transmisiones_con_soc_por_semana(fecha_inicial, fecha_final):
+def consultar_soc_ttec(fecha_dia):
     db1 = MySQLdb.connect(host=ip_bd_edu,
                           user="brunom",
                           passwd="Manzana",
@@ -116,14 +116,19 @@ def consultar_transmisiones_con_soc_por_semana(fecha_inicial, fecha_final):
 
     cur1 = db1.cursor()
 
-    cur1.execute("SELECT * FROM tracktec.eventos AS t1 JOIN " +
-                 "(SELECT evento_id, nombre, valor FROM tracktec.telemetria_ " +
-                 "WHERE (nombre = 'SOC' AND valor IS NOT NULL)) as t2 " +
-                 "ON t1.id=t2.evento_id " +
-                 f"WHERE fecha_evento >= '{fecha_inicial}' AND fecha_evento <= '{fecha_final}' " +
-                 "AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' " +
-                 "AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')" +
-                 "ORDER BY patente LIMIT 10;"
+    cur1.execute(
+                 f"""
+                 SELECT * FROM tracktec.eventos as te1 JOIN 
+                 (SELECT evento_id as evento_id_soc, nombre as nombre_soc, 
+                 valor as valor_soc FROM tracktec.telemetria_ 
+                 WHERE (nombre = 'SOC' and 
+                        valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')) as t_soc 
+                 ON te1.id=t_soc.evento_id_soc 
+                 WHERE fecha_evento = '{fecha_dia}'
+                 AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
+                 AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
+                 ORDER BY patente;
+                 """
                  )
 
     df__ = procesar_datos_consulta(cur1)
@@ -184,7 +189,7 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
                  valor_ptg IS NOT NULL OR
                  valor_ptc IS NOT NULL
                  order by patente;
-                """
+                 """
                  )
 
     df__ = procesar_datos_consulta(cur1)
@@ -198,9 +203,9 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
 def descargar_data_ttec(fecha__):
     fecha__2 = fecha__.replace('-', '_')
     # logger.info(f"{consultar_soc_id(142339596)}")
-    # df = consultar_transmisiones_con_soc_por_semana('2020-08-20', '2020-08-20')
+    # df = consultar_soc_ttec('2020-08-20')
     dfx = consultar_transmisiones_tracktec_por_dia(fecha__)
-    dfx.to_parquet(f'data_{fecha__2}.parquet', compression='gzip')
+    dfx.to_parquet(f'data_Ttec_{fecha__2}.parquet', compression='gzip')
 
 
 def descargar_semana_ttec(fechas):
@@ -209,13 +214,14 @@ def descargar_semana_ttec(fechas):
         descargar_data_ttec(fecha_)
 
 
-def descargar_resumen_ftp(fecha_inicio):
+def descargar_resumen_ftp(fecha_inicio, descargar_data_gps=False):
     direccion_resumen = ('Bruno/Data_PerdidaTransmision/' + fecha_inicio[:4] +
                          '/' + fecha_inicio[5:7] + '/' + fecha_inicio[-2:])
 
     fecha_inicio = fecha_inicio.replace('-', '_')
     extension_archivo = '_revisado.xlsx'
     filename = 'Cruce_196resumen_data_' + fecha_inicio + extension_archivo
+    filename_gps = 'data_' + fecha_inicio + '.parquet'
 
     hostname = '192.168.11.101'
     username = 'bruno'
@@ -229,6 +235,8 @@ def descargar_resumen_ftp(fecha_inicio):
             ftp.login(username, passw)
             ftp.cwd(direccion_resumen)
             ftp.retrbinary("RETR " + filename, open(filename, 'wb').write)
+            if descargar_data_gps:
+                ftp.retrbinary("RETR " + filename_gps, open(filename_gps, 'wb').write)
             ftp.quit()
             break
         except (TimeoutError, ConnectionResetError):
@@ -270,7 +278,11 @@ def mezclar_data(fecha):
     # distancia con perdida de transmision menor a 1 km
     # no mas de 3 pulsos fuera de ruta
 
-    df = pd.read_parquet(f'data_{fecha}.parquet')
+    # luego de procesar:
+    # filtrar por valores delta_ soc potencia > 0 (positivos no-nulos)
+    # distancia dato Tracktec a registro gps Sonda asignado < 1km
+
+    df = pd.read_parquet(f'data_Ttec_{fecha}.parquet')
     # para que todas las columnas vengan renombradas
     columnas_originales = df.columns
     df.columns = columnas_originales + '_Ttec_ini'
@@ -320,7 +332,7 @@ def mezclar_data(fecha):
     df196r_ef['delta_Pcon'] = df196r_ef['valor_ptc_Ttec_fin'] - df196r_ef['valor_ptc_Ttec_ini']
     df196r_ef['delta_Pgen'] = df196r_ef['valor_ptg_Ttec_ini'] - df196r_ef['valor_ptg_Ttec_fin']
     df196r_ef.sort_values(by=['PPU', 'hora_inicio'], inplace=True)
-    df196r_ef.to_excel(f'data_196rE_{fecha}.xlsx', index=False)
+    df196r_ef.to_parquet(f'data_196rE_{fecha}.parquet', compression='gzip')
 
     return df196r_ef
 
@@ -389,7 +401,6 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False)
     df_f['Intervalo'] = pd.to_datetime(df_f['Intervalo'], errors='raise',
                                        format="%H:%M:%S")
 
-    df_f.to_excel(f'dataf_{nombre_semana}.xlsx', index=False)
     df_f.to_parquet(f'dataf_{nombre_semana}.parquet', compression='gzip')
     logger.info('Listo todo para esta semana')
     os.chdir('..')
@@ -404,4 +415,3 @@ if __name__ == '__main__':
     pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     logger.info('Listo todo')
-

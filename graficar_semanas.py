@@ -63,7 +63,7 @@ def mantener_log():
     return logger
 
 
-def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False):
+def g_pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False):
     global df_final
     global primera_semana
     global ultima_semana
@@ -101,8 +101,19 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False)
     df = df.loc[(df['Operativo'] == 'C')]
     df = df.loc[(df['Cumple_Triada_Revisada'] == 1)]
     df['pctje_dist_recorrida'] = df['distancia_recorrida'] / df['dist_Ruta']
-    df = df.loc[df.pctje_dist_recorrida > 0.85]
-    df = df.loc[df.pctje_dist_recorrida < 1.15]
+    df = df.loc[df['pctje_dist_recorrida'] > 0.85]
+    df = df.loc[df['pctje_dist_recorrida'] < 1.15]
+    df = df.loc[df['d_registros_ini'] < 1000]
+    df = df.loc[df['d_registros_fin'] < 1000]
+
+    # Transformar soc a porcentaje y potencias a kW
+    df['delta_soc'] = df['delta_soc'] * 0.01
+    df['delta_Pcon'] = df['delta_Pcon'] * 0.001
+    df['delta_Pgen'] = df['delta_Pgen'] * 0.001
+
+    df = df.loc[df['delta_soc'] > 0]
+    df = df.loc[df['delta_Pcon'] > 0]
+    df = df.loc[df['delta_Pgen'] > 0]
 
     if not df_final:
         primera_semana = nombre_semana
@@ -111,7 +122,126 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False)
     ultima_semana = nombre_semana
 
 
+def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool = True):
+    # para cada ss grafica boxplot por mh de dos variables
+    if not os.path.isdir(f'boxplot_{variable_graficar}'):
+        logger.info(f'Creando carpeta boxplot_{variable_graficar}')
+        os.mkdir(f'boxplot_{variable_graficar}')
+    else:
+        logger.warning(f'Reescribiendo sobre carpeta boxplot_{variable_graficar}')
+
+    os.chdir(f'boxplot_{variable_graficar}')
+
+    global df_final
+    vary = [f'{variable_graficar}_25%',
+            f'{variable_graficar}_50%',
+            f'{variable_graficar}_75%',
+            f'{variable_graficar}_count']
+
+    columnas_de_interes = [x for x in columnas_groupby]
+    columnas_de_interes.append(variable_graficar)
+
+    df_fv = df_final.loc[~(df_final[variable_graficar].isna()), columnas_de_interes]
+    # describe entrega col_count, col_mean, col_std, col_min, col_max, col_50%, 25% y 75%
+    df_var = df_fv.groupby(by=columnas_groupby).describe().reset_index()
+    df_var.columns = ['_'.join(col).rstrip('_') for col in df_var.columns.values]
+    # filtrar MH con menos de 3 datos
+    df_var = df_var.loc[df_var[f'{variable_graficar}_count'] >= minimos_datos_por_mh]
+
+    if filtrar_outliers_intercuartil:
+        df_var['IQR'] = df_var[vary[2]] - df_var[vary[0]]
+        df_var['cota_inf'] = df_var[vary[0]] - 1.5 * df_var['IQR']
+        df_var['cota_sup'] = df_var[vary[2]] + 1.5 * df_var['IQR']
+        for row in zip(df_var['MH_inicio'], df_var['Servicio_Sentido'],
+                       df_var['cota_inf'], df_var['cota_sup']):
+            select1 = ((df_fv['MH_inicio'] == row[0]) & (df_fv['Servicio_Sentido'] == row[1]))
+            select2 = ((df_fv[variable_graficar] >= row[2]) & (df_fv[variable_graficar] <= row[3]))
+            df_fv = df_fv.loc[((select1 & select2) | (~select1))]
+
+    df_fv2 = df_fv.copy()
+    for ss in df_fv2['Servicio_Sentido'].unique():
+        for mh in df_fv2.loc[df_fv2['Servicio_Sentido'] == ss, 'MH_inicio'].unique():
+            if len(df_fv2.loc[((df_fv2['Servicio_Sentido'] == ss) &
+                               (df_fv2['MH_inicio'] == mh))].index) < minimos_datos_por_mh:
+                df_fv = df_fv.loc[((df_fv['Servicio_Sentido'] != ss) | (df_fv['MH_inicio'] != mh))]
+    # pasar MH a datetime en una nueva columna
+    df_fv['Media Hora'] = df_fv['MH_inicio'].map(dict_mh_date_str)
+    contador = 0
+    max_data_vary = df_fv[f'{variable_graficar}'].max() + 0.005
+    df_fv = df_fv.sort_values(by=['Media Hora', 'Servicio_Sentido'])
+
+    df_cero = pd.DataFrame(mh_del_dia, columns=['Media Hora'])
+    df_cero['Cero'] = 0
+    df_cero = df_cero.loc[df_cero['Media Hora'] >= df_fv['Media Hora'].min()]
+    df_cero = df_cero.loc[df_cero['Media Hora'] <= df_fv['Media Hora'].max()]
+    nombre_cero = '0'
+    if filtrar_outliers_intercuartil:
+        nombre_cero = 's0'
+
+    for ss in df_fv['Servicio_Sentido'].unique():
+        el_color = colores_2[contador % len(colores_2)][0]
+        logger.info(f'Graficando boxplot {variable_graficar} {ss}')
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_cero['Media Hora'].dt.time,
+                                 y=df_cero['Cero'],
+                                 name=nombre_cero,
+                                 marker_color="white"))
+
+        df_fv2 = df_fv.loc[df_fv['Servicio_Sentido'] == ss, [variable_graficar, 'Media Hora']]
+        fig.add_trace(go.Box(x=df_fv2['Media Hora'].dt.time,
+                             y=df_fv2[variable_graficar],
+                             notched=False,
+                             name='Boxplot',
+                             boxpoints=False,
+                             marker_color=el_color))
+
+        contador += 1
+        # Set x-axis title
+        fig.update_xaxes(showticklabels=True,
+                         tickangle=270
+                         )
+
+        texto_titulo = f"Variación en %SOC por expedición {ss}"
+        if variable_graficar == 'delta_soc':
+            fig.update_yaxes(title_text="", tickformat=".1%",
+                             range=[0, max_data_vary],
+                             gridcolor=colorLineas_ejeYppal)
+
+        elif variable_graficar == 'delta_Pcon':
+            texto_titulo = f"Potencia consumida por expedición {ss}"
+            fig.update_yaxes(title_text="Potencia [kW]",
+                             range=[0, max_data_vary],
+                             gridcolor=colorLineas_ejeYppal)
+
+        elif variable_graficar == 'delta_Pgen':
+            texto_titulo = f"Potencia generada por expedición {ss}"
+            fig.update_yaxes(title_text="Potencia [kW]",
+                             range=[0, max_data_vary],
+                             gridcolor=colorLineas_ejeYppal)
+
+        # Add figure title
+        fig.update_layout(title=go.layout.Title(
+            text=texto_titulo,
+            font=dict(size=20, color='#000000')),
+            font=dict(size=14, color='#000000'),
+            xaxis_tickformat='%H:%M',
+            showlegend=False
+        )
+
+        if filtrar_outliers_intercuartil:
+            fig.write_html(f'Boxplot_{ss}_{variable_graficar}.html',
+                           config={'scrollZoom': True, 'displayModeBar': True})
+            fig.write_image(f'Boxplot_{ss}_{variable_graficar}.png', width=1600, height=800)
+        else:
+            fig.write_html(f'BoxplotCO_{ss}_{variable_graficar}.html',
+                           config={'scrollZoom': True, 'displayModeBar': True})
+            fig.write_image(f'BoxplotCO_{ss}_{variable_graficar}.png', width=1600, height=800)
+
+    os.chdir('..')
+
+
 def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True):
+    # para cada ss grafica mediana y percentiles 25 y 75 por mh de una variable
     if not os.path.isdir(variable_graficar):
         logger.info(f'Creando carpeta {variable_graficar}')
         os.mkdir(variable_graficar)
@@ -235,7 +365,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
 
         texto_titulo = f"Variación en %SOC por expedición {ss}"
         if variable_graficar == 'delta_soc':
-            fig.update_yaxes(title_text="", tickformat=" %",
+            fig.update_yaxes(title_text="", tickformat=".1%",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
@@ -277,7 +407,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
 
 def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
                          filtrar_outliers_intercuartil: bool = True):
-
+    # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
     if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}'):
         logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}')
         os.mkdir(f'{variable_graficar}_{variable_graficar_2}')
@@ -481,17 +611,12 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
-    logger.info('Graficando')
     df_final = pd.concat(df_final)
-    df_final['delta_soc'] = df_final['delta_soc'] * 0.01
-    df_final['delta_Pcon'] = df_final['delta_Pcon'] * 0.001
-    df_final['delta_Pgen'] = df_final['delta_Pgen'] * 0.001
-
     sem_primera = primera_semana.replace('semana_', '')[:-3]
     sem_ultima = ultima_semana.replace('semana_', '')[:-3]
     carpeta_guardar_graficos = f'graficos_{sem_primera}_{sem_ultima}'
@@ -503,6 +628,11 @@ if __name__ == '__main__':
         logger.warning(f'Reescribiendo sobre carpeta {carpeta_guardar_graficos}')
 
     os.chdir(carpeta_guardar_graficos)
+    df_final.to_excel(f'data_{carpeta_guardar_graficos}.xlsx', index=False)
+    df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
+    logger.info('Graficando')
+
+    # graficar_boxplot('delta_soc')
     graficar('delta_soc')
     # graficar('delta_Pcon')
     # graficar('delta_Pgen')
