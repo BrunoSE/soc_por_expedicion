@@ -454,7 +454,6 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
 
     a_vgrafricar = [variable_graficar, variable_graficar_2]
     a_vary = [vary, vary_2]
-    a_columnas = [columnas_de_interes, columnas_de_interes_2]
 
     # observar que hay un supuesto implícito:
     # que es válido trabajar con columnas que tengan NA en la otra variable
@@ -628,12 +627,10 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    g_pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # g_pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
     g_pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
@@ -653,9 +650,9 @@ if __name__ == '__main__':
     df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
     logger.info('Graficando')
 
-    # graficar_boxplot('delta_soc')
-    graficar('delta_soc')
+    # graficar('delta_soc')
     # graficar('delta_Pcon')
     # graficar('delta_Pgen')
+    graficar_boxplot('delta_soc')
     graficar_potencias_2('delta_Pcon', 'delta_Pgen')
     logger.info('Listo todo')
