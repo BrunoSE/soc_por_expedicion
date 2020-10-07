@@ -848,7 +848,8 @@ if __name__ == '__main__':
     df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
     logger.info('Graficando')
 
-    graficar_soc_tv()
+    graficar('tiempo_viaje')
+    # graficar_soc_tv()
     # graficar('delta_soc')
     # graficar('delta_Pcon')
     # graficar('delta_Pgen')
