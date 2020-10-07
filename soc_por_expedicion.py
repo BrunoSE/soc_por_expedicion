@@ -94,10 +94,13 @@ def procesar_datos_consulta(cursor):
     df_ = pd.DataFrame(datos, columns=[i[0] for i in cursor.description])
     df_.set_index('id', inplace=True)
     for columna in ['latitud', 'longitud', 'valor_soc', 'valor_ptg', 'valor_ptc']:
-        try:
-            df_[columna] = pd.to_numeric(df_[columna])
-        except ValueError:
-            logger.exception(f'Error en columna {columna}')
+        if columna in df_.columns:
+            try:
+                df_[columna] = pd.to_numeric(df_[columna])
+            except ValueError:
+                logger.exception(f'Error en columna {columna}')
+        else:
+            logger.warning(f'Columna {columna} no está en estos datos')
 
     df_['fecha_hora_consulta'] = pd.to_datetime(df_['fecha_hora_consulta'], errors='raise',
                                                 format="%Y-%m-%d %H:%M:%S")
