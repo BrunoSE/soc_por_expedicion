@@ -401,6 +401,13 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
 
+        elif variable_graficar == 'tiempo_viaje':
+            texto_titulo = f"Tiempo de viaje {ss}"
+            fig.update_yaxes(title_text="[minutos]",
+                             range=[0, max_data_vary],
+                             gridcolor=colorLineas_ejeYppal,
+                             secondary_y=False)
+
         # Add figure title
         fig.update_layout(title=go.layout.Title(
             text=texto_titulo,
