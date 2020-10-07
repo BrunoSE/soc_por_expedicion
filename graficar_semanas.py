@@ -619,6 +619,196 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
     os.chdir('..')
 
 
+def graficar_soc_tv(variable_graficar: str = 'delta_soc',
+                    variable_graficar_2: str = 'tiempo_viaje',
+                    filtrar_outliers_intercuartil: bool = True,
+                    incluir_p75y25: bool = False):
+    # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
+    if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}'):
+        logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}')
+        os.mkdir(f'{variable_graficar}_{variable_graficar_2}')
+    else:
+        logger.warning(f'Reescribiendo sobre carpeta {variable_graficar}_{variable_graficar_2}')
+
+    os.chdir(f'{variable_graficar}_{variable_graficar_2}')
+
+    global df_final
+    dict_leyenda = {'delta_soc': 'Delta %SOC',
+                    'tiempo_viaje': 'T_Viaje [min]'}
+
+    vary = [f'{variable_graficar}_25%',
+            f'{variable_graficar}_50%',
+            f'{variable_graficar}_75%',
+            f'{variable_graficar}_count']
+
+    vary_2 = [f'{variable_graficar_2}_25%',
+              f'{variable_graficar_2}_50%',
+              f'{variable_graficar_2}_75%',
+              f'{variable_graficar_2}_count']
+
+    columnas_de_interes = [x for x in columnas_groupby]
+    columnas_de_interes.append(variable_graficar)
+    columnas_de_interes_2 = [x for x in columnas_groupby]
+    columnas_de_interes_2.append(variable_graficar_2)
+
+    a_vgrafricar = [variable_graficar, variable_graficar_2]
+    a_vary = [vary, vary_2]
+
+    # observar que hay un supuesto implícito:
+    # que es válido trabajar con columnas que tengan NA en la otra variable
+    df_fv = [df_final.loc[~(df_final[variable_graficar].isna()), columnas_de_interes],
+             df_final.loc[~(df_final[variable_graficar_2].isna()), columnas_de_interes_2]]
+
+    df_var = []
+
+    for i in [0, 1]:
+        # describe entrega col_count, col_mean, col_std, col_min, col_max, col_50%, 25% y 75%
+        df_vari = df_fv[i].groupby(by=columnas_groupby).describe().reset_index()
+        df_vari.columns = ['_'.join(col).rstrip('_') for col in df_vari.columns.values]
+        # filtrar MH con menos de 3 datos
+        df_vari = df_vari.loc[df_vari[f'{a_vgrafricar[i]}_count'] >= minimos_datos_por_mh]
+
+        if filtrar_outliers_intercuartil:
+            df_vari['IQR'] = df_vari[a_vary[i][2]] - df_vari[a_vary[i][0]]
+            df_vari['cota_inf'] = df_vari[a_vary[i][0]] - 1.5 * df_vari['IQR']
+            df_vari['cota_sup'] = df_vari[a_vary[i][2]] + 1.5 * df_vari['IQR']
+            for row in zip(df_vari['MH_inicio'], df_vari['Servicio_Sentido'],
+                           df_vari['cota_inf'], df_vari['cota_sup']):
+                select1 = ((df_fv[i]['MH_inicio'] == row[0]) &
+                           (df_fv[i]['Servicio_Sentido'] == row[1]))
+                select2 = ((df_fv[i][a_vgrafricar[i]] >= row[2]) &
+                           (df_fv[i][a_vgrafricar[i]] <= row[3]))
+                df_fv[i] = df_fv[i].loc[((select1 & select2) | (~select1))]
+
+            df_vari = df_fv[i].groupby(by=columnas_groupby).describe().reset_index()
+            df_vari.columns = ['_'.join(col).rstrip('_') for col in df_vari.columns.values]
+            # filtrar MH con menos de 2 datos
+            df_vari = df_vari.loc[df_vari[f'{a_vgrafricar[i]}_count'] >= minimos_datos_por_mh]
+
+        # pasar MH a datetime en una nueva columna
+        df_vari['Media Hora'] = df_vari['MH_inicio'].map(dict_mh_date_str)
+        df_var.append(df_vari.copy())
+
+    # plotear
+    contador = 0
+    df_cero = pd.DataFrame(mh_del_dia, columns=['Media Hora'])
+    df_cero['Cero'] = 0
+    hra_min = min(df_var[0]['Media Hora'].min(), df_var[1]['Media Hora'].min())
+    hra_max = max(df_var[0]['Media Hora'].max(), df_var[1]['Media Hora'].max())
+    df_cero = df_cero.loc[df_cero['Media Hora'] >= hra_min]
+    df_cero = df_cero.loc[df_cero['Media Hora'] <= hra_max]
+    nombre_cero = '0'
+    if filtrar_outliers_intercuartil:
+        nombre_cero = 's0'
+
+    max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max())
+    max_data_vary = df_var[0][a_vary[0][2]].max() * 1.5 + 0.01
+    max_data_vary2 = df_var[1][a_vary[1][2]].max() + 1
+
+    # iterar servicios
+    for ss in df_var[0]['Servicio_Sentido'].unique():
+        if ss not in df_var[1]['Servicio_Sentido'].unique():
+            logger.warning(f'{ss} tiene datos de {variable_graficar} pero '
+                           f'no de {variable_graficar_2}')
+
+        logger.info(f'Graficando {variable_graficar} y {variable_graficar_2} {ss}')
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+        # agregar un 0 para forzar mostrar el origen 0, 0
+        fig.add_trace(go.Scatter(x=df_cero['Media Hora'].dt.time,
+                                 y=df_cero['Cero'],
+                                 name=nombre_cero,
+                                 marker_color="white"))
+
+        for i in [0, 1]:
+            el_color = colores_2[contador % len(colores_2)][0]
+            dfx = pd.merge(df_cero[['Media Hora']],
+                           df_var[i].loc[df_var[i]['Servicio_Sentido'] == ss],
+                           how='left',
+                           on='Media Hora')
+
+            if incluir_p75y25:
+                fig.add_trace(
+                        go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][2]],
+                                   name=f'percentil75',
+                                   mode='lines',
+                                   connectgaps=True,
+                                   opacity=opacity_percentiles,
+                                   line_color=el_color),
+                        secondary_y=bool(i))
+
+            fig.add_trace(
+                go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][1]],
+                           name=f'Mediana {dict_leyenda[a_vgrafricar[i]]}',
+                           mode='lines+markers',
+                           connectgaps=True,
+                           marker=dict(size=marker_size,
+                                       symbol=marcadores[contador % len(marcadores)]),
+                           line_color=el_color),
+                secondary_y=bool(i))
+
+            if incluir_p75y25:
+                fig.add_trace(
+                    go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][0]],
+                               name=f'percentil25',
+                               mode='lines',
+                               connectgaps=True,
+                               opacity=opacity_percentiles,
+                               line_color=el_color),
+                    secondary_y=bool(i))
+
+            # Agregar bar plot abajo con numero de datos
+            fig.add_trace(go.Bar(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][3]],
+                                 marker=dict(color=el_color),
+                                 opacity=opacity_barras,
+                                 name=f'Nro Datos {dict_leyenda[a_vgrafricar[i]]}',
+                                 width=[ancho_barras * 0.6] * len(dfx['Media Hora'].index)),
+                          secondary_y=True)
+
+            contador += 1
+
+        # Formatear eje y secundario
+        fig.update_yaxes(title_text="",
+                         range=[0, max_data_vary2],
+                         secondary_y=True)
+
+        # Set x-axis title
+        fig.update_xaxes(title_text="Nro Datos - Media hora despacho",
+                         showticklabels=True,
+                         type='category',
+                         tickangle=270
+                         )
+
+        texto_titulo = (f"{dict_leyenda[a_vgrafricar[0]]} y "
+                        f"{dict_leyenda[a_vgrafricar[1]]} por expedición {ss}")
+        fig.update_yaxes(title_text="",
+                         range=[0, max_data_vary],
+                         gridcolor=colorLineas_ejeYppal,
+                         secondary_y=False)
+        if variable_graficar == 'delta_soc':
+            fig.update_yaxes(tickformat=".1%", secondary_y=False)
+
+        # Add figure title
+        fig.update_layout(title=go.layout.Title(
+            text=texto_titulo,
+            font=dict(size=20, color='#000000')),
+            font=dict(size=14, color='#000000'),
+            xaxis_tickformat='%H:%M'
+        )
+
+        if filtrar_outliers_intercuartil:
+            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}.html',
+                           config={'scrollZoom': True, 'displayModeBar': True})
+            fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}.png',
+                            width=1600, height=800)
+        else:
+            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}.html',
+                           config={'scrollZoom': True, 'displayModeBar': True})
+            fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}.png',
+                            width=1600, height=800)
+
+    os.chdir('..')
+
+
 if __name__ == '__main__':
     global primera_semana
     global ultima_semana
@@ -627,13 +817,13 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    # g_pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
-    g_pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    g_pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3])
+    # g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
+    # g_pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # g_pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3])
 
     df_final = pd.concat(df_final)
     sem_primera = primera_semana.replace('semana_', '')[:-3]
@@ -651,7 +841,8 @@ if __name__ == '__main__':
     df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
     logger.info('Graficando')
 
-    graficar('delta_soc')
+    graficar_soc_tv()
+    # graficar('delta_soc')
     # graficar('delta_Pcon')
     # graficar('delta_Pgen')
     # graficar_boxplot('delta_soc')
