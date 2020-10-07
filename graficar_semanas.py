@@ -817,13 +817,13 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    g_pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # g_pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
-    # g_pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # g_pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3])
+    g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
+    g_pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    g_pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3])
 
     df_final = pd.concat(df_final)
     sem_primera = primera_semana.replace('semana_', '')[:-3]
