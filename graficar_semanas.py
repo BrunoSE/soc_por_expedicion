@@ -156,15 +156,15 @@ def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia='Laboral'):
 
 
 def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
-                     tipo_dia='Laboral'):
-    # para cada ss grafica boxplot por mh de dos variables
-    if not os.path.isdir(f'boxplot_{variable_graficar}'):
-        logger.info(f'Creando carpeta boxplot_{variable_graficar}')
-        os.mkdir(f'boxplot_{variable_graficar}')
+                     tipo_dia='Laboral', nombre=''):
+    # para cada ss grafica mediana y percentiles 25 y 75 por mh de una variable
+    if not os.path.isdir(f'{variable_graficar}_{tipo_dia}'):
+        logger.info(f'Creando carpeta {variable_graficar}_{tipo_dia}')
+        os.mkdir(f'{variable_graficar}_{tipo_dia}')
     else:
-        logger.warning(f'Reescribiendo sobre carpeta boxplot_{variable_graficar}')
+        logger.warning(f'Reescribiendo sobre carpeta {variable_graficar}_{tipo_dia}')
 
-    os.chdir(f'boxplot_{variable_graficar}')
+    os.chdir(f'{variable_graficar}_{tipo_dia}')
 
     global df_final
     vary = [f'{variable_graficar}_25%',
@@ -235,20 +235,20 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
                          tickangle=270
                          )
 
-        texto_titulo = f"Variación en %SOC por expedición {ss}"
+        texto_titulo = f"Variación en %SOC por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
         if variable_graficar == 'delta_soc':
             fig.update_yaxes(title_text="", tickformat=".1%",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal)
 
         elif variable_graficar == 'delta_Pcon':
-            texto_titulo = f"Potencia consumida por expedición {ss}"
+            texto_titulo = f"Potencia consumida por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal)
 
         elif variable_graficar == 'delta_Pgen':
-            texto_titulo = f"Potencia generada por expedición {ss}"
+            texto_titulo = f"Potencia generada por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal)
@@ -263,13 +263,15 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
         )
 
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'Boxplot_{ss}_{variable_graficar}.html',
+            fig.write_html(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'Boxplot_{ss}_{variable_graficar}.png', width=1600, height=800)
+            fig.write_image(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.png',
+                            width=1600, height=800)
         else:
-            fig.write_html(f'BoxplotCO_{ss}_{variable_graficar}.html',
+            fig.write_html(f'BoxplotCO_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'BoxplotCO_{ss}_{variable_graficar}.png', width=1600, height=800)
+            fig.write_image(f'BoxplotCO_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.png',
+                            width=1600, height=800)
 
     os.chdir('..')
 
@@ -277,13 +279,13 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
 def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
              tipo_dia='Laboral', nombre=''):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de una variable
-    if not os.path.isdir(variable_graficar):
-        logger.info(f'Creando carpeta {variable_graficar}')
-        os.mkdir(variable_graficar)
+    if not os.path.isdir(f'{variable_graficar}_{tipo_dia}'):
+        logger.info(f'Creando carpeta {variable_graficar}_{tipo_dia}')
+        os.mkdir(f'{variable_graficar}_{tipo_dia}')
     else:
-        logger.warning(f'Reescribiendo sobre carpeta {variable_graficar}')
+        logger.warning(f'Reescribiendo sobre carpeta {variable_graficar}_{tipo_dia}')
 
-    os.chdir(variable_graficar)
+    os.chdir(f'{variable_graficar}_{tipo_dia}')
 
     global df_final
     vary = [f'{variable_graficar}_25%',
@@ -398,7 +400,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
                          tickangle=270
                          )
 
-        texto_titulo = f"Variación en %SOC por expedición {ss} ({tipo_dia} {nombre})"
+        texto_titulo = f"Variación en %SOC por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
         if variable_graficar == 'delta_soc':
             fig.update_yaxes(title_text="", tickformat=".1%",
                              range=[0, max_data_vary],
@@ -406,21 +408,21 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
                              secondary_y=False)
 
         elif variable_graficar == 'delta_Pcon':
-            texto_titulo = f"Potencia consumida por expedición {ss} ({tipo_dia} {nombre})"
+            texto_titulo = f"Potencia consumida por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
 
         elif variable_graficar == 'delta_Pgen':
-            texto_titulo = f"Potencia generada por expedición {ss} ({tipo_dia} {nombre})"
+            texto_titulo = f"Potencia generada por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
 
         elif variable_graficar == 'tiempo_viaje':
-            texto_titulo = f"Tiempo de viaje {ss} ({tipo_dia} {nombre})"
+            texto_titulo = f"Tiempo de viaje {ss} (Dias {tipo_dia} de semana {nombre})"
             fig.update_yaxes(title_text="[minutos]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
@@ -450,15 +452,16 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
 
 
 def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
-                         filtrar_outliers_intercuartil: bool = True, tipo_dia='Laboral'):
+                         filtrar_outliers_intercuartil: bool = True,
+                         tipo_dia='Laboral', nombre=''):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
-    if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}'):
-        logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}')
-        os.mkdir(f'{variable_graficar}_{variable_graficar_2}')
+    if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}'):
+        logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}_{tipo_dia}')
+        os.mkdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}')
     else:
-        logger.warning(f'Reescribiendo sobre carpeta {variable_graficar}_{variable_graficar_2}')
+        logger.warning(f'Reescribiendo sobre carpeta {variable_graficar}_{variable_graficar_2}_{tipo_dia}')
 
-    os.chdir(f'{variable_graficar}_{variable_graficar_2}')
+    os.chdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}')
 
     global df_final
     dict_leyenda = {'delta_Pcon': 'PCon',
@@ -612,13 +615,13 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
         texto_titulo = ""
         if ((variable_graficar == 'delta_Pcon' and variable_graficar_2 == 'delta_Pgen') or
                 (variable_graficar == 'delta_Pgen' and variable_graficar_2 == 'delta_Pcon')):
-            texto_titulo = f"Potencia consumida y generada por expedición {ss}"
+            texto_titulo = f"Potencia consumida y generada por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
         else:
-            texto_titulo = f"{variable_graficar} y {variable_graficar_2} por expedición {ss}"
+            texto_titulo = f"{variable_graficar} y {variable_graficar_2} por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
             fig.update_yaxes(title_text="",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
@@ -633,14 +636,14 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
         )
 
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}.html',
+            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}.png',
+            fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}.html',
+            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}.png',
+            fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.png',
                             width=1600, height=800)
 
     os.chdir('..')
@@ -649,15 +652,15 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
 def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                     variable_graficar_2: str = 'tiempo_viaje',
                     filtrar_outliers_intercuartil: bool = True,
-                    incluir_p75y25: bool = False, tipo_dia='Laboral'):
+                    incluir_p75y25: bool = False, tipo_dia='Laboral', nombre=''):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
-    if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}'):
-        logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}')
-        os.mkdir(f'{variable_graficar}_{variable_graficar_2}')
+    if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}'):
+        logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}_{tipo_dia}')
+        os.mkdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}')
     else:
-        logger.warning(f'Reescribiendo sobre carpeta {variable_graficar}_{variable_graficar_2}')
+        logger.warning(f'Reescribiendo sobre carpeta {variable_graficar}_{variable_graficar_2}_{tipo_dia}')
 
-    os.chdir(f'{variable_graficar}_{variable_graficar_2}')
+    os.chdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}')
 
     global df_final
     dict_leyenda = {'delta_soc': 'Delta %SOC',
@@ -806,7 +809,8 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                          )
 
         texto_titulo = (f"{dict_leyenda[a_vgrafricar[0]]} y "
-                        f"{dict_leyenda[a_vgrafricar[1]]} por expedición {ss}")
+                        f"{dict_leyenda[a_vgrafricar[1]]} por expedición {ss}"
+                        f" (Dias {tipo_dia} de semana {nombre})")
         fig.update_yaxes(title_text="",
                          range=[0, max_data_vary],
                          gridcolor=colorLineas_ejeYppal,
@@ -823,14 +827,14 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
         )
 
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}.html',
+            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}.png',
+            fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}.html',
+            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}.png',
+            fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.png',
                             width=1600, height=800)
 
     os.chdir('..')
@@ -859,15 +863,17 @@ def graficar_semana(dia_ini_, mes_, anno_, sem_especial_=[], tipo_dia_='Laboral'
     os.chdir(carpeta_guardar_graficos)
     df_final.to_excel(f'data_{tipo_dia_}_{carpeta_guardar_graficos}.xlsx', index=False)
     df_final.to_parquet(f'data_{tipo_dia_}_{carpeta_guardar_graficos}.parquet', compression='gzip')
-    logger.info('Graficando')
+
+    sem_primera = sem_primera.replace('_', '-')
+    logger.info(f'Graficando {tipo_dia_} {sem_primera}')
 
     graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=sem_primera)
-    # graficar_soc_tv()
-    # graficar('delta_soc')
-    # graficar('delta_Pcon')
-    # graficar('delta_Pgen')
-    # graficar_boxplot('delta_soc')
-    # graficar_potencias_2('delta_Pcon', 'delta_Pgen')
+    graficar_soc_tv(tipo_dia=tipo_dia_, nombre=sem_primera)
+    graficar('delta_soc', tipo_dia=tipo_dia_, nombre=sem_primera)
+    # graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=sem_primera)
+    # graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=sem_primera)
+    graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=sem_primera)
+    graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=sem_primera)
     os.chdir('..')
 
 
@@ -903,25 +909,28 @@ def graficar_todo(tipo_dia_='Laboral'):
     os.chdir(carpeta_guardar_graficos)
     df_final.to_excel(f'data_{carpeta_guardar_graficos}.xlsx', index=False)
     df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
-    logger.info('Graficando')
+
+    nombre_ = nombre_.replace('_', '-')
+    logger.info(f'Graficando {tipo_dia_} {nombre_}')
 
     graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar_soc_tv()
-    # graficar('delta_soc')
-    # graficar('delta_Pcon')
-    # graficar('delta_Pgen')
-    # graficar_boxplot('delta_soc')
-    # graficar_potencias_2('delta_Pcon', 'delta_Pgen')
+    # graficar_soc_tv(tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
     os.chdir('..')
 
 
 def main():
     logger = mantener_log()
-
-    graficar_semana(7, 9, 2020)
-    # graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7])
-    # graficar_semana(21, 9, 2020)
-    # graficar_semana(28, 9, 2020)
+    # tipo_dia_interes puede ser 'Laboral' o 'Sabado' o 'Domingo'
+    tipo_dia_interes = 'Laboral'
+    graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+    # graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
+    # graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+    # graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
 
     # graficar_todo()
     logger.info('Listo todo')
