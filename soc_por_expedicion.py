@@ -210,6 +210,8 @@ def descargar_semana_ttec(fechas, reemplazar=True):
             logger.info(f"Descargando data Tracktec para fecha {fecha_}")
             dfx = consultar_transmisiones_tracktec_por_dia(fecha__)
             dfx.to_parquet(f'data_Ttec_{fecha_}.parquet', compression='gzip')
+        else:
+            logger.info(f"No se va a reemplazar data Ttec de fecha {fecha_}")
 
 
 def descargar_resumen_ftp(fecha__, descargar_data_gps=False):
@@ -248,6 +250,8 @@ def descargar_semana_ftp(fechas, reemplazar=True, descargar_data_gps_=False):
         filename_ = f'Cruce_196resumen_data_{fecha_}_revisado.xlsx'
         if descargar_data_gps_ or (reemplazar or not os.path.isfile(filename_)):
             descargar_resumen_ftp(fecha_, descargar_data_gps_)
+        else:
+            logger.info(f"No se va a reemplazar data FTP de fecha {fecha_}")
 
 
 def distancia_wgs84(lat1: float, lon1: float, lat2: float, lon2: float):

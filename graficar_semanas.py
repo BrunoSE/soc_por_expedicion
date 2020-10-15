@@ -24,7 +24,7 @@ dict_mh_date_str = dict(zip(mh_del_dia_str, mh_del_dia))
 
 # para crear groupby
 columnas_groupby = ['Servicio', 'Sentido', 'Servicio_Sentido', 'MH_inicio']
-minimos_datos_por_mh = 3
+minimos_datos_por_mh = 2
 
 # para plotear
 marcadores = ['circle', 'square', 'diamond', 'pentagon', 'triangle-up',
@@ -63,56 +63,68 @@ def mantener_log():
     return logger
 
 
-def g_pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False, sem_especial=[]):
-    # dia_ini tiene que ser un día lunes si se ocupa sem_especial
-    global df_final
-    global primera_semana
-    global ultima_semana
-
+def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia='Laboral'):
+    # dia_ini tiene que ser un día lunes
     # Sacar fechas de interes a partir de lunes inicio de semana
     fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}', dayfirst=True).date()
     dia_de_la_semana = fecha_dia_ini.isoweekday()
     if dia_de_la_semana != 1:
-        if not sem_especial:
-            logger.warning(f"Primer día no es lunes, numero: {dia_de_la_semana}")
-        else:
-            logger.error(f"Primer día no es lunes y se quiere ocupar parámetro sem_especial, "
-                         f"numero dia_ini: {dia_de_la_semana}")
-            exit()
-    if dia_de_la_semana > 5:
-        logger.error(f"Primer día es fin de semana, numero: {dia_de_la_semana}")
+        logger.error(f"Primer día no es lunes y se quiere ocupar parámetro sem_especial, "
+                     f"numero dia_ini: {dia_de_la_semana}")
         exit()
 
-    fechas_de_interes = []
-    # se buscan días de la semana entre fecha inicio y el viernes siguiente
+    fechas_de_interes_dt = []
     if not sem_especial:
-        for i in range(0, 6 - dia_de_la_semana):
-            fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=i))
+        for i in range(0, 7):
+            fechas_de_interes_dt.append(fecha_dia_ini + pd.Timedelta(days=i))
     else:
+        # se buscan días de la semana entre fecha inicio y el domingo
         if len(sem_especial) != len(set(sem_especial)):
             logger.error(f"Semana especial no debe repetir números: {sem_especial}")
             exit()
         for i in sem_especial:
             if 0 < i < 8:
-                fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=(i - 1)))
+                fechas_de_interes_dt.append(fecha_dia_ini + pd.Timedelta(days=(i - 1)))
             else:
                 logger.error(f"Semana especial debe ser lista con números 1 al 7: {sem_especial}")
                 exit()
+    fechas_de_interes = [x.strftime('%Y-%m-%d') for x in fechas_de_interes_dt]
 
-    fechas_de_interes = [x.strftime('%Y-%m-%d') for x in fechas_de_interes]
+    logger.info(f'Semana de interes: {fechas_de_interes}')
 
     # Crear variable que escribe en log file de este dia
-    el_dia_fin = fechas_de_interes[-1].split('-')[-1]
-    nombre_semana = f"semana_{fechas_de_interes[0].replace('-', '_')}_{el_dia_fin}"
+    nombre_semana = f"semana_{fechas_de_interes[0].replace('-', '_')}"
 
     # buscar si ya existia carpeta
     if not os.path.isdir(nombre_semana):
         logger.error(f"No existe carpeta {nombre_semana}")
         exit()
 
+    # sacar las fechas con el tipo de dia buscado
+    fecha_util = []
+    if tipo_dia == 'Laboral':
+        fecha_util = [fecha_ for fecha_ in fechas_de_interes_dt if fecha_dia_ini.isoweekday() < 6]
+    elif tipo_dia == 'Sabado' or tipo_dia == 'Sábado':
+        fecha_util = [fecha_ for fecha_ in fechas_de_interes_dt if fecha_dia_ini.isoweekday() == 6]
+    elif tipo_dia == 'Domingo':
+        fecha_util = [fecha_ for fecha_ in fechas_de_interes_dt if fecha_dia_ini.isoweekday() == 7]
+    else:
+        logger.error("Variable tipo_dia tiene que ser 'Laboral' o 'Sabado' o 'Domingo'")
+
+    if fecha_util:
+        fechas_de_interes = [x.strftime('%Y_%m_%d') for x in fecha_util]
+        logger.info(f'Dias {tipo_dia} de la semana: {fechas_de_interes}')
+    else:
+        logger.warning(f'Semana {nombre_semana} no tiene dias tipo {tipo_dia}')
+        return
+
     # lectura de data y creacion de tablas dinamicas con groupby
-    logger.info(f'Leyendo ./{nombre_semana}/dataf_{nombre_semana}.parquet')
-    df = pd.read_parquet(f'./{nombre_semana}/dataf_{nombre_semana}.parquet')
+    df = []
+    for fecha_ in fechas_de_interes:
+        logger.info(f'Leyendo ./{nombre_semana}/data_Ttec_{fecha_}.parquet')
+        df.append(pd.read_parquet(f'./{nombre_semana}/data_Ttec_{fecha_}.parquet'))
+
+    df = pd.concat(df)
 
     # filtrar
     df = df.loc[(df['Operativo'] == 'C')]
@@ -139,7 +151,8 @@ def g_pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=Fals
     ultima_semana = nombre_semana
 
 
-def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool = True):
+def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
+                     tipo_dia='Laboral'):
     # para cada ss grafica boxplot por mh de dos variables
     if not os.path.isdir(f'boxplot_{variable_graficar}'):
         logger.info(f'Creando carpeta boxplot_{variable_graficar}')
@@ -257,7 +270,8 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
     os.chdir('..')
 
 
-def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True):
+def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
+             tipo_dia='Laboral', nombre=''):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de una variable
     if not os.path.isdir(variable_graficar):
         logger.info(f'Creando carpeta {variable_graficar}')
@@ -380,7 +394,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                          tickangle=270
                          )
 
-        texto_titulo = f"Variación en %SOC por expedición {ss}"
+        texto_titulo = f"Variación en %SOC por expedición {ss} ({tipo_dia} {nombre})"
         if variable_graficar == 'delta_soc':
             fig.update_yaxes(title_text="", tickformat=".1%",
                              range=[0, max_data_vary],
@@ -388,21 +402,21 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
                              secondary_y=False)
 
         elif variable_graficar == 'delta_Pcon':
-            texto_titulo = f"Potencia consumida por expedición {ss}"
+            texto_titulo = f"Potencia consumida por expedición {ss} ({tipo_dia} {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
 
         elif variable_graficar == 'delta_Pgen':
-            texto_titulo = f"Potencia generada por expedición {ss}"
+            texto_titulo = f"Potencia generada por expedición {ss} ({tipo_dia} {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
 
         elif variable_graficar == 'tiempo_viaje':
-            texto_titulo = f"Tiempo de viaje {ss}"
+            texto_titulo = f"Tiempo de viaje {ss} ({tipo_dia} {nombre})"
             fig.update_yaxes(title_text="[minutos]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
@@ -417,20 +431,22 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True)
         )
 
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'graf_{ss}_{variable_graficar}.html',
+            fig.write_html(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'graf_{ss}_{variable_graficar}.png', width=1600, height=800)
+            fig.write_image(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.png',
+                            width=1600, height=800)
         else:
-            fig.write_html(f'grafico_{ss}_{variable_graficar}.html',
+            fig.write_html(f'grafico_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'grafico_{ss}_{variable_graficar}.png', width=1600, height=800)
+            fig.write_image(f'grafico_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.png',
+                            width=1600, height=800)
 
         contador += 1
     os.chdir('..')
 
 
 def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
-                         filtrar_outliers_intercuartil: bool = True):
+                         filtrar_outliers_intercuartil: bool = True, tipo_dia='Laboral'):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
     if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}'):
         logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}')
@@ -591,7 +607,7 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
 
         texto_titulo = ""
         if ((variable_graficar == 'delta_Pcon' and variable_graficar_2 == 'delta_Pgen') or
-           (variable_graficar == 'delta_Pgen' and variable_graficar_2 == 'delta_Pcon')):
+                (variable_graficar == 'delta_Pgen' and variable_graficar_2 == 'delta_Pcon')):
             texto_titulo = f"Potencia consumida y generada por expedición {ss}"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
@@ -629,7 +645,7 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
 def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                     variable_graficar_2: str = 'tiempo_viaje',
                     filtrar_outliers_intercuartil: bool = True,
-                    incluir_p75y25: bool = False):
+                    incluir_p75y25: bool = False, tipo_dia='Laboral'):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
     if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}'):
         logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}')
@@ -816,30 +832,63 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     os.chdir('..')
 
 
-def main():
+def graficar_semana(dia_ini_, mes_, anno_, sem_especial_=[], tipo_dia_='Laboral'):
     global primera_semana
     global ultima_semana
     global df_final
+    df_final = []
+    primera_semana = ''
+    ultima_semana = ''
 
-    logger = mantener_log()
-
-    reemplazar_data_ttec = False
-    reemplazar_resumen = False
-    # g_pipeline(17, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    g_pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    g_pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
-    # g_pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # g_pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3])
+    g_pipeline(dia_ini_, mes_, anno_, sem_especial=sem_especial_, tipo_dia=tipo_dia_)
 
     df_final = pd.concat(df_final)
-    sem_primera = primera_semana.replace('semana_', '')[:-3]
-    sem_ultima = ultima_semana.replace('semana_', '')[:-3]
+    sem_primera = primera_semana.replace('semana_', '')
+    carpeta_guardar_graficos = f'graficos_{sem_primera}'
+
+    if not os.path.isdir(carpeta_guardar_graficos):
+        logger.info(f'Creando carpeta {carpeta_guardar_graficos}')
+        os.mkdir(carpeta_guardar_graficos)
+    else:
+        logger.warning(f'Reescribiendo sobre carpeta {carpeta_guardar_graficos}')
+
+    os.chdir(carpeta_guardar_graficos)
+    df_final.to_excel(f'data_{tipo_dia_}_{carpeta_guardar_graficos}.xlsx', index=False)
+    df_final.to_parquet(f'data_{tipo_dia_}_{carpeta_guardar_graficos}.parquet', compression='gzip')
+    logger.info('Graficando')
+
+    graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=sem_primera)
+    # graficar_soc_tv()
+    # graficar('delta_soc')
+    # graficar('delta_Pcon')
+    # graficar('delta_Pgen')
+    # graficar_boxplot('delta_soc')
+    # graficar_potencias_2('delta_Pcon', 'delta_Pgen')
+    os.chdir('..')
+
+
+def graficar_todo(tipo_dia_='Laboral'):
+    global primera_semana
+    global ultima_semana
+    global df_final
+    df_final = []
+    primera_semana = ''
+    ultima_semana = ''
+
+    g_pipeline(7, 9, 2020)
+    g_pipeline(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7])
+    g_pipeline(21, 9, 2020)
+    g_pipeline(28, 9, 2020)
+
+    df_final = pd.concat(df_final)
+    sem_primera = primera_semana.replace('semana_', '')
+    sem_ultima = ultima_semana.replace('semana_', '')
+    nombre_ = sem_primera
     if sem_primera == sem_ultima:
         carpeta_guardar_graficos = f'graficos_{sem_primera}'
     else:
         carpeta_guardar_graficos = f'graficos_{sem_primera}_{sem_ultima}'
+        nombre_ = f'{sem_primera}_{sem_ultima}'
 
     if not os.path.isdir(carpeta_guardar_graficos):
         logger.info(f'Creando carpeta {carpeta_guardar_graficos}')
@@ -852,15 +901,28 @@ def main():
     df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
     logger.info('Graficando')
 
-    graficar('tiempo_viaje')
+    graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
     # graficar_soc_tv()
     # graficar('delta_soc')
     # graficar('delta_Pcon')
     # graficar('delta_Pgen')
     # graficar_boxplot('delta_soc')
     # graficar_potencias_2('delta_Pcon', 'delta_Pgen')
+    os.chdir('..')
+
+
+def main():
+    logger = mantener_log()
+
+    graficar_semana(7, 9, 2020)
+    # graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7])
+    # graficar_semana(21, 9, 2020)
+    # graficar_semana(28, 9, 2020)
+
+    # graficar_todo()
     logger.info('Listo todo')
 
 
 if __name__ == '__main__':
     main()
+
