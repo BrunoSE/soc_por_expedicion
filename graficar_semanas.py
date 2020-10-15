@@ -902,10 +902,11 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     primera_semana = ''
     ultima_semana = ''
 
-    g_pipeline(7, 9, 2020)
+    g_pipeline(7, 9, 2020, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7])
-    g_pipeline(21, 9, 2020)
-    g_pipeline(28, 9, 2020)
+    g_pipeline(21, 9, 2020, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(28, 9, 2020, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(5, 10, 2020, sem_especial=[], tipo_dia=tipo_dia_)
 
     df_final = pd.concat(df_final)
     if df_final.empty:
@@ -950,11 +951,12 @@ def main():
     for tipo_dia_interes in ['Sabado', 'Domingo']:
         graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
         graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
-        # graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
-        # graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        graficar_semana(5, 10, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
 
         # revisar que graficar_varias_semanas tenga estas mismas semanas
-        # graficar_varias_semanas(tipo_dia_=tipo_dia_interes)
+        graficar_varias_semanas(tipo_dia_=tipo_dia_interes)
         logger.info(f'Listo dias tipo {tipo_dia_interes}')
 
     logger.info('Listo todo')

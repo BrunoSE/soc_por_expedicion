@@ -422,9 +422,10 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 6, 7])
-    pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 6, 7])
+    # pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(5, 10, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     logger.info('Listo todo')
