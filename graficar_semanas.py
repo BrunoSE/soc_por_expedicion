@@ -24,7 +24,7 @@ dict_mh_date_str = dict(zip(mh_del_dia_str, mh_del_dia))
 
 # para crear groupby
 columnas_groupby = ['Servicio', 'Sentido', 'Servicio_Sentido', 'MH_inicio']
-minimos_datos_por_mh = 2
+minimos_datos_por_mh = 1
 
 # para plotear
 marcadores = ['circle', 'square', 'diamond', 'pentagon', 'triangle-up',
@@ -40,7 +40,7 @@ marker_size = 11
 opacity_percentiles = 0.7
 opacity_barras = 0.6
 ancho_barras = 0.5
-ticks_para_barras = [5, 15]
+ticks_para_barras = [minimos_datos_por_mh, 5, 15]
 texto_ticks_barras = [str(x) for x in ticks_para_barras]
 zoom_out_barras = 1.5  # mas grande implica barras de conteo mas pequeñas
 
@@ -212,6 +212,10 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
     if filtrar_outliers_intercuartil:
         nombre_cero = 's0'
 
+    nombre_ = ''
+    if nombre:
+        nombre_ = nombre.replace('-', '_')
+
     for ss in df_fv['Servicio_Sentido'].unique():
         el_color = colores_2[contador % len(colores_2)][0]
         logger.info(f'Graficando boxplot {variable_graficar} {ss}')
@@ -262,17 +266,15 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
             showlegend=False
         )
 
-        if nombre:
-            nombre = nombre.replace('-', '_')
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
+            fig.write_html(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.png',
+            fig.write_image(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'BoxplotCO_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
+            fig.write_html(f'BoxplotCO_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'BoxplotCO_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.png',
+            fig.write_image(f'BoxplotCO_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
 
     os.chdir('..')
@@ -332,6 +334,10 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
     nombre_cero = '0'
     if filtrar_outliers_intercuartil:
         nombre_cero = 's0'
+
+    nombre_ = ''
+    if nombre:
+        nombre_ = nombre.replace('-', '_')
 
     max_data_count = df_var[vary[3]].max()
     max_data_vary = df_var[vary[2]].max() + 0.005
@@ -438,17 +444,15 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
             xaxis_tickformat='%H:%M'
         )
 
-        if nombre:
-            nombre = nombre.replace('-', '_')
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
+            fig.write_html(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.png',
+            fig.write_image(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'grafico_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
+            fig.write_html(f'grafico_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'grafico_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.png',
+            fig.write_image(f'grafico_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
 
         contador += 1
@@ -534,6 +538,10 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
     nombre_cero = '0'
     if filtrar_outliers_intercuartil:
         nombre_cero = 's0'
+
+    nombre_ = ''
+    if nombre:
+        nombre_ = nombre.replace('-', '_')
 
     max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max())
     max_data_vary = max(df_var[0][a_vary[0][2]].max(), df_var[1][a_vary[1][2]].max()) + 1
@@ -639,17 +647,15 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
             xaxis_tickformat='%H:%M'
         )
 
-        if nombre:
-            nombre = nombre.replace('-', '_')
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
+            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.png',
+            fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
+            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.png',
+            fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
 
     os.chdir('..')
@@ -736,6 +742,10 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     nombre_cero = '0'
     if filtrar_outliers_intercuartil:
         nombre_cero = 's0'
+
+    nombre_ = ''
+    if nombre:
+        nombre_ = nombre.replace('-', '_')
 
     # max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max())
     max_data_vary = df_var[0][a_vary[0][2]].max() * 1.5 + 0.01
@@ -832,17 +842,15 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
             xaxis_tickformat='%H:%M'
         )
 
-        if nombre:
-            nombre = nombre.replace('-', '_')
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
+            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.png',
+            fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
+            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
-            fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.png',
+            fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
 
     os.chdir('..')
