@@ -935,20 +935,20 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     nombre_ = nombre_.replace('_', '-')
     logger.info(f'Graficando {tipo_dia_} {nombre_}')
 
-    graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar_soc_tv(tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
+    graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=sem_primera)
+    graficar('delta_soc', tipo_dia=tipo_dia_, nombre=sem_primera)
+    # graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=sem_primera)
+    # graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=sem_primera)
+    graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=sem_primera)
+    graficar_soc_tv(tipo_dia=tipo_dia_, nombre=sem_primera)
+    graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=sem_primera)
     os.chdir('..')
 
 
 def main():
     logger = mantener_log()
     # tipo_dia_interes puede ser 'Laboral' o 'Sabado' o 'Domingo'
-    for tipo_dia_interes in ['Sabado', 'Domingo']:
+    for tipo_dia_interes in ['Laboral', 'Sabado', 'Domingo']:
         graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
         graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
         graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
