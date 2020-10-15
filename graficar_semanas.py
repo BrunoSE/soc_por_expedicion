@@ -929,8 +929,8 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
         logger.warning(f'Reescribiendo sobre carpeta {carpeta_guardar_graficos}')
 
     os.chdir(carpeta_guardar_graficos)
-    df_final.to_excel(f'data_{carpeta_guardar_graficos}.xlsx', index=False)
-    df_final.to_parquet(f'data_{carpeta_guardar_graficos}.parquet', compression='gzip')
+    df_final.to_excel(f'data_{tipo_dia_}_{carpeta_guardar_graficos}.xlsx', index=False)
+    df_final.to_parquet(f'data_{tipo_dia_}_{carpeta_guardar_graficos}.parquet', compression='gzip')
 
     nombre_ = nombre_.replace('_', '-')
     logger.info(f'Graficando {tipo_dia_} {nombre_}')
