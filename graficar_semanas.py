@@ -840,7 +840,7 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     os.chdir('..')
 
 
-def graficar_semana(dia_ini_, mes_, anno_, sem_especial_=[], tipo_dia_='Laboral'):
+def graficar_semana(dia_ini_, mes_, anno_, sem_especial=[], tipo_dia_='Laboral'):
     global primera_semana
     global ultima_semana
     global df_final
@@ -848,7 +848,7 @@ def graficar_semana(dia_ini_, mes_, anno_, sem_especial_=[], tipo_dia_='Laboral'
     primera_semana = ''
     ultima_semana = ''
 
-    g_pipeline(dia_ini_, mes_, anno_, sem_especial=sem_especial_, tipo_dia=tipo_dia_)
+    g_pipeline(dia_ini_, mes_, anno_, sem_especial=sem_especial, tipo_dia=tipo_dia_)
 
     df_final = pd.concat(df_final)
     sem_primera = primera_semana.replace('semana_', '')
