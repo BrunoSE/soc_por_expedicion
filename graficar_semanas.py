@@ -103,13 +103,14 @@ def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia='Laboral'):
     # sacar las fechas con el tipo de dia buscado
     fecha_util = []
     if tipo_dia == 'Laboral':
-        fecha_util = [fecha_ for fecha_ in fechas_de_interes_dt if fecha_dia_ini.isoweekday() < 6]
+        fecha_util = [fecha_ for fecha_ in fechas_de_interes_dt if fecha_.isoweekday() < 6]
     elif tipo_dia == 'Sabado' or tipo_dia == 'Sábado':
-        fecha_util = [fecha_ for fecha_ in fechas_de_interes_dt if fecha_dia_ini.isoweekday() == 6]
+        fecha_util = [fecha_ for fecha_ in fechas_de_interes_dt if fecha_.isoweekday() == 6]
     elif tipo_dia == 'Domingo':
-        fecha_util = [fecha_ for fecha_ in fechas_de_interes_dt if fecha_dia_ini.isoweekday() == 7]
+        fecha_util = [fecha_ for fecha_ in fechas_de_interes_dt if fecha_.isoweekday() == 7]
     else:
         logger.error("Variable tipo_dia tiene que ser 'Laboral' o 'Sabado' o 'Domingo'")
+        exit()
 
     if fecha_util:
         fechas_de_interes = [x.strftime('%Y_%m_%d') for x in fecha_util]
@@ -121,8 +122,8 @@ def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia='Laboral'):
     # lectura de data y creacion de tablas dinamicas con groupby
     df = []
     for fecha_ in fechas_de_interes:
-        logger.info(f'Leyendo ./{nombre_semana}/data_Ttec_{fecha_}.parquet')
-        df.append(pd.read_parquet(f'./{nombre_semana}/data_Ttec_{fecha_}.parquet'))
+        logger.info(f'Leyendo ./{nombre_semana}/data_196rE_{fecha_}.parquet')
+        df.append(pd.read_parquet(f'./{nombre_semana}/data_196rE_{fecha_}.parquet'))
 
     df = pd.concat(df)
 
