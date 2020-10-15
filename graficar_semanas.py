@@ -864,7 +864,7 @@ def graficar_semana(dia_ini_, mes_, anno_, sem_especial=[], tipo_dia_='Laboral')
     g_pipeline(dia_ini_, mes_, anno_, sem_especial=sem_especial, tipo_dia=tipo_dia_)
 
     df_final = pd.concat(df_final)
-    if df_final.empty():
+    if df_final.empty:
         logger.warning(f'Esta semana no tiene data tracktec en su(s) dia(s) tipo {tipo_dia_}')
         return
 
@@ -908,7 +908,7 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     g_pipeline(28, 9, 2020)
 
     df_final = pd.concat(df_final)
-    if df_final.empty():
+    if df_final.empty:
         logger.warning(f'Esta semana no tiene data tracktec en su(s) dia(s) tipo {tipo_dia_}')
         return
 
