@@ -262,6 +262,8 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
             showlegend=False
         )
 
+        if nombre:
+            nombre = nombre.replace('-', '_')
         if filtrar_outliers_intercuartil:
             fig.write_html(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
@@ -436,6 +438,8 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
             xaxis_tickformat='%H:%M'
         )
 
+        if nombre:
+            nombre = nombre.replace('-', '_')
         if filtrar_outliers_intercuartil:
             fig.write_html(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
@@ -635,6 +639,8 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
             xaxis_tickformat='%H:%M'
         )
 
+        if nombre:
+            nombre = nombre.replace('-', '_')
         if filtrar_outliers_intercuartil:
             fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
@@ -826,6 +832,8 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
             xaxis_tickformat='%H:%M'
         )
 
+        if nombre:
+            nombre = nombre.replace('-', '_')
         if filtrar_outliers_intercuartil:
             fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre}.html',
                            config={'scrollZoom': True, 'displayModeBar': True})
@@ -868,16 +876,16 @@ def graficar_semana(dia_ini_, mes_, anno_, sem_especial=[], tipo_dia_='Laboral')
     logger.info(f'Graficando {tipo_dia_} {sem_primera}')
 
     graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=sem_primera)
-    graficar_soc_tv(tipo_dia=tipo_dia_, nombre=sem_primera)
     graficar('delta_soc', tipo_dia=tipo_dia_, nombre=sem_primera)
     # graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=sem_primera)
     # graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=sem_primera)
     graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=sem_primera)
+    graficar_soc_tv(tipo_dia=tipo_dia_, nombre=sem_primera)
     graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=sem_primera)
     os.chdir('..')
 
 
-def graficar_todo(tipo_dia_='Laboral'):
+def graficar_varias_semanas(tipo_dia_='Laboral'):
     global primera_semana
     global ultima_semana
     global df_final
@@ -926,13 +934,16 @@ def graficar_todo(tipo_dia_='Laboral'):
 def main():
     logger = mantener_log()
     # tipo_dia_interes puede ser 'Laboral' o 'Sabado' o 'Domingo'
-    tipo_dia_interes = 'Laboral'
-    graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
-    # graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
-    # graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
-    # graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+    for tipo_dia_interes in ['Laboral', 'Sabado', 'Domingo']:
+        graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
 
-    # graficar_todo()
+        # revisar que graficar_varias_semanas tenga estas mismas semanas
+        # graficar_varias_semanas(tipo_dia_=tipo_dia_interes)
+        logger.info(f'Listo dias tipo {tipo_dia_interes}')
+
     logger.info('Listo todo')
 
 
