@@ -708,7 +708,7 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     if filtrar_outliers_intercuartil:
         nombre_cero = 's0'
 
-    max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max())
+    # max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max())
     max_data_vary = df_var[0][a_vary[0][2]].max() * 1.5 + 0.01
     max_data_vary2 = df_var[1][a_vary[1][2]].max() + 1
 
@@ -735,13 +735,13 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
 
             if incluir_p75y25:
                 fig.add_trace(
-                        go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][2]],
-                                   name=f'percentil75',
-                                   mode='lines',
-                                   connectgaps=True,
-                                   opacity=opacity_percentiles,
-                                   line_color=el_color),
-                        secondary_y=bool(i))
+                    go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][2]],
+                               name=f'percentil75',
+                               mode='lines',
+                               connectgaps=True,
+                               opacity=opacity_percentiles,
+                               line_color=el_color),
+                    secondary_y=bool(i))
 
             fig.add_trace(
                 go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][1]],
@@ -816,9 +816,10 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     os.chdir('..')
 
 
-if __name__ == '__main__':
+def main():
     global primera_semana
     global ultima_semana
+    global df_final
 
     logger = mantener_log()
 
@@ -828,14 +829,17 @@ if __name__ == '__main__':
     # g_pipeline(24, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(31, 8, 2020, reemplazar_data_ttec, reemplazar_resumen)
     g_pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
-    g_pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    g_pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3])
+    # g_pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 4])
+    # g_pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # g_pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3])
 
     df_final = pd.concat(df_final)
     sem_primera = primera_semana.replace('semana_', '')[:-3]
     sem_ultima = ultima_semana.replace('semana_', '')[:-3]
-    carpeta_guardar_graficos = f'graficos_{sem_primera}_{sem_ultima}'
+    if sem_primera == sem_ultima:
+        carpeta_guardar_graficos = f'graficos_{sem_primera}'
+    else:
+        carpeta_guardar_graficos = f'graficos_{sem_primera}_{sem_ultima}'
 
     if not os.path.isdir(carpeta_guardar_graficos):
         logger.info(f'Creando carpeta {carpeta_guardar_graficos}')
@@ -856,3 +860,7 @@ if __name__ == '__main__':
     # graficar_boxplot('delta_soc')
     # graficar_potencias_2('delta_Pcon', 'delta_Pgen')
     logger.info('Listo todo')
+
+
+if __name__ == '__main__':
+    main()

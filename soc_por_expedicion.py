@@ -203,28 +203,21 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
     return df__
 
 
-def descargar_data_ttec(fecha__):
-    fecha__2 = fecha__.replace('-', '_')
-    # logger.info(f"{consultar_soc_id(142339596)}")
-    # df = consultar_soc_ttec('2020-08-20')
-    dfx = consultar_transmisiones_tracktec_por_dia(fecha__)
-    dfx.to_parquet(f'data_Ttec_{fecha__2}.parquet', compression='gzip')
-
-
-def descargar_semana_ttec(fechas):
+def descargar_semana_ttec(fechas, reemplazar=True):
     for fecha_ in fechas:
-        logger.info(f"Descargando data Tracktec para fecha {fecha_}")
-        descargar_data_ttec(fecha_)
+        if reemplazar or not os.path.isfile(f'data_Ttec_{fecha_}.parquet'):
+            fecha__ = fecha_.replace('_', '-')
+            logger.info(f"Descargando data Tracktec para fecha {fecha_}")
+            dfx = consultar_transmisiones_tracktec_por_dia(fecha__)
+            dfx.to_parquet(f'data_Ttec_{fecha_}.parquet', compression='gzip')
 
 
-def descargar_resumen_ftp(fecha_inicio, descargar_data_gps=False):
-    direccion_resumen = ('Bruno/Data_PerdidaTransmision/' + fecha_inicio[:4] +
-                         '/' + fecha_inicio[5:7] + '/' + fecha_inicio[-2:])
+def descargar_resumen_ftp(fecha__, descargar_data_gps=False):
+    direccion_resumen = ('Bruno/Data_PerdidaTransmision/' + fecha__[:4] +
+                         '/' + fecha__[5:7] + '/' + fecha__[-2:])
 
-    fecha_inicio = fecha_inicio.replace('-', '_')
-    extension_archivo = '_revisado.xlsx'
-    filename = 'Cruce_196resumen_data_' + fecha_inicio + extension_archivo
-    filename_gps = 'data_' + fecha_inicio + '.parquet'
+    filename = f'Cruce_196resumen_data_{fecha__}_revisado.xlsx'
+    filename_gps = f'data_{fecha__}.parquet'
 
     hostname = '192.168.11.101'
     username = 'bruno'
@@ -232,7 +225,7 @@ def descargar_resumen_ftp(fecha_inicio, descargar_data_gps=False):
     max_reintentos = 20
 
     for tt in range(1, max_reintentos + 1):
-        logger.info('Bajando resumen dia %s: intento número %d' % (fecha_inicio, tt,))
+        logger.info('Bajando resumen dia %s: intento número %d' % (fecha__, tt,))
         try:
             ftp = ftplib.FTP(hostname)
             ftp.login(username, passw)
@@ -250,9 +243,11 @@ def descargar_resumen_ftp(fecha_inicio, descargar_data_gps=False):
         raise TimeoutError
 
 
-def descargar_semana_ftp(fechas):
+def descargar_semana_ftp(fechas, reemplazar=True, descargar_data_gps_=False):
     for fecha_ in fechas:
-        descargar_resumen_ftp(fecha_)
+        filename_ = f'Cruce_196resumen_data_{fecha_}_revisado.xlsx'
+        if descargar_data_gps_ or (reemplazar or not os.path.isfile(filename_)):
+            descargar_resumen_ftp(fecha_, descargar_data_gps_)
 
 
 def distancia_wgs84(lat1: float, lon1: float, lat2: float, lon2: float):
@@ -344,27 +339,21 @@ def mezclar_data(fecha):
 
 
 def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False, sem_especial=[]):
-    # dia_ini tiene que ser un día lunes si se ocupa sem_especial
+    # dia_ini tiene que ser un día lunes
     # Sacar fechas de interes a partir de lunes inicio de semana
     fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}', dayfirst=True).date()
     dia_de_la_semana = fecha_dia_ini.isoweekday()
     if dia_de_la_semana != 1:
-        if not sem_especial:
-            logger.warning(f"Primer día no es lunes, numero: {dia_de_la_semana}")
-        else:
-            logger.error(f"Primer día no es lunes y se quiere ocupar parámetro sem_especial, "
-                         f"numero dia_ini: {dia_de_la_semana}")
-            exit()
-    if dia_de_la_semana > 5:
-        logger.error(f"Primer día es fin de semana, numero: {dia_de_la_semana}")
+        logger.error(f"Primer día no es lunes y se quiere ocupar parámetro sem_especial, "
+                     f"numero dia_ini: {dia_de_la_semana}")
         exit()
 
     fechas_de_interes = []
-    # se buscan días de la semana entre fecha inicio y el viernes siguiente
     if not sem_especial:
-        for i in range(0, 6 - dia_de_la_semana):
+        for i in range(0, 8):
             fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=i))
     else:
+        # se buscan días de la semana entre fecha inicio y el domingo
         if len(sem_especial) != len(set(sem_especial)):
             logger.error(f"Semana especial no debe repetir números: {sem_especial}")
             exit()
@@ -380,8 +369,7 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
 
     # Crear variable que escribe en log file de este dia
     no_existia_semana = False
-    el_dia_fin = fechas_de_interes[-1].split('-')[-1]
-    nombre_semana = f"semana_{fechas_de_interes[0].replace('-', '_')}_{el_dia_fin}"
+    nombre_semana = f"semana_{fechas_de_interes[0].replace('-', '_')}"
 
     # buscar si ya existia carpeta
     if not os.path.isdir(nombre_semana):
@@ -406,23 +394,22 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
     file_handler.setFormatter(file_format)
     logger.addHandler(file_handler)
 
-    if no_existia_semana or replace_data_ttec:
-        logger.info('Consultando servidor mysql por datos tracktec')
-        descargar_semana_ttec(fechas_de_interes)
     fechas_de_interes = [x.replace('-', '_') for x in fechas_de_interes]
 
-    if no_existia_semana or replace_resumen:
-        logger.info('Descargando archivos de resumen del FTP')
-        descargar_semana_ftp(fechas_de_interes)
+    if no_existia_semana:
+        replace_data_ttec = True
+        replace_resumen = True
 
-    df_f = []
+    logger.info('Consultando servidor mysql por datos tracktec')
+    descargar_semana_ttec(fechas_de_interes, replace_data_ttec)
+
+    logger.info('Descargando archivos de resumen del FTP')
+    descargar_semana_ftp(fechas_de_interes, replace_resumen)
+
     for fi in fechas_de_interes:
         logger.info(f'Concatenando y mezclando data de fecha {fi}')
-        df_f.append(mezclar_data(fi))
+        mezclar_data(fi)
 
-    df_f = pd.concat(df_f)
-
-    df_f.to_parquet(f'dataf_{nombre_semana}.parquet', compression='gzip')
     logger.info('Listo todo para esta semana')
     os.chdir('..')
 
@@ -432,6 +419,9 @@ if __name__ == '__main__':
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
-    pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3])
+    pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 6, 7])
+    pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
 
     logger.info('Listo todo')
