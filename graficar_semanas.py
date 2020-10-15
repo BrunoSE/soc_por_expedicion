@@ -63,7 +63,7 @@ def mantener_log():
     return logger
 
 
-def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia):
+def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia=''):
     global df_final
     global primera_semana
     global ultima_semana
