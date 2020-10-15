@@ -370,7 +370,6 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
 
     logger.info(f'Semana de interes: {fechas_de_interes}')
 
-    # Crear variable que escribe en log file de este dia
     no_existia_semana = False
     nombre_semana = f"semana_{fechas_de_interes[0].replace('-', '_')}"
 
@@ -390,6 +389,7 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
 
     os.chdir(nombre_semana)
 
+    # Crear variable que escribe en log file de este dia
     file_handler = logging.FileHandler(f'{nombre_semana}.log')
 
     # no deja pasar los debug, solo info hasta critical
