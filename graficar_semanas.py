@@ -947,14 +947,14 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
 def main():
     logger = mantener_log()
     # tipo_dia_interes puede ser 'Laboral' o 'Sabado' o 'Domingo'
-    for tipo_dia_interes in ['Laboral', 'Sabado', 'Domingo']:
+    for tipo_dia_interes in ['Sabado', 'Domingo']:
         graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
         graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
-        graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
-        graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
 
         # revisar que graficar_varias_semanas tenga estas mismas semanas
-        graficar_varias_semanas(tipo_dia_=tipo_dia_interes)
+        # graficar_varias_semanas(tipo_dia_=tipo_dia_interes)
         logger.info(f'Listo dias tipo {tipo_dia_interes}')
 
     logger.info('Listo todo')
