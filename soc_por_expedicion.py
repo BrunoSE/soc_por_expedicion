@@ -334,8 +334,7 @@ def mezclar_data(fecha):
                                             format="%H:%M:%S")
 
     df196r_ef.to_parquet(f'data_196rE_{fecha}.parquet', compression='gzip')
-
-    return df196r_ef
+    return None
 
 
 def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False, sem_especial=[]):
@@ -350,7 +349,7 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
 
     fechas_de_interes = []
     if not sem_especial:
-        for i in range(0, 8):
+        for i in range(0, 7):
             fechas_de_interes.append(fecha_dia_ini + pd.Timedelta(days=i))
     else:
         # se buscan días de la semana entre fecha inicio y el domingo
