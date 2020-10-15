@@ -63,7 +63,7 @@ def mantener_log():
     return logger
 
 
-def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia='Laboral'):
+def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia):
     global df_final
     global primera_semana
     global ultima_semana
@@ -903,7 +903,7 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     ultima_semana = ''
 
     g_pipeline(7, 9, 2020, sem_especial=[], tipo_dia=tipo_dia_)
-    g_pipeline(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7])
+    g_pipeline(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia=tipo_dia_)
     g_pipeline(21, 9, 2020, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(28, 9, 2020, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(5, 10, 2020, sem_especial=[], tipo_dia=tipo_dia_)
@@ -949,11 +949,11 @@ def main():
     logger = mantener_log()
     # tipo_dia_interes puede ser 'Laboral' o 'Sabado' o 'Domingo'
     for tipo_dia_interes in ['Laboral', 'Sabado', 'Domingo']:
-        graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
-        graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
-        graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
-        graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
-        graficar_semana(5, 10, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(5, 10, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
 
         # revisar que graficar_varias_semanas tenga estas mismas semanas
         graficar_varias_semanas(tipo_dia_=tipo_dia_interes)
