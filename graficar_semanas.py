@@ -64,6 +64,9 @@ def mantener_log():
 
 
 def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia='Laboral'):
+    global df_final
+    global primera_semana
+    global ultima_semana
     # dia_ini tiene que ser un día lunes
     # Sacar fechas de interes a partir de lunes inicio de semana
     fecha_dia_ini = pd.to_datetime(f'{dia_ini}-{mes}-{anno}', dayfirst=True).date()
