@@ -129,24 +129,26 @@ def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia='Laboral'):
         df.append(pd.read_parquet(f'./{nombre_semana}/data_196rE_{fecha_}.parquet'))
 
     df = pd.concat(df)
-
-    # filtrar
-    df = df.loc[(df['Operativo'] == 'C')]
-    df = df.loc[(df['Cumple_Triada_Revisada'] == 1)]
-    df['pctje_dist_recorrida'] = df['distancia_recorrida'] / df['dist_Ruta']
-    df = df.loc[df['pctje_dist_recorrida'] > 0.85]
-    df = df.loc[df['pctje_dist_recorrida'] < 1.15]
-    df = df.loc[df['d_registros_ini'] < 1000]
-    df = df.loc[df['d_registros_fin'] < 1000]
-
-    # Transformar soc a porcentaje y potencias a kW
-    df['delta_soc'] = df['delta_soc'] * 0.01
-    df['delta_Pcon'] = df['delta_Pcon'] * 0.001
-    df['delta_Pgen'] = df['delta_Pgen'] * 0.001
-
     df = df.loc[df['delta_soc'] > 0]
-    df = df.loc[df['delta_Pcon'] > 0]
-    df = df.loc[df['delta_Pgen'] > 0]
+    if df.empty:
+        logger.warning('Este día no tiene data tracktec')
+    else:
+        # filtrar
+        df = df.loc[(df['Operativo'] == 'C')]
+        df = df.loc[(df['Cumple_Triada_Revisada'] == 1)]
+        df['pctje_dist_recorrida'] = df['distancia_recorrida'] / df['dist_Ruta']
+        df = df.loc[df['pctje_dist_recorrida'] > 0.85]
+        df = df.loc[df['pctje_dist_recorrida'] < 1.15]
+        df = df.loc[df['d_registros_ini'] < 1000]
+        df = df.loc[df['d_registros_fin'] < 1000]
+
+        # Transformar soc a porcentaje y potencias a kW
+        df['delta_soc'] = df['delta_soc'] * 0.01
+        df['delta_Pcon'] = df['delta_Pcon'] * 0.001
+        df['delta_Pgen'] = df['delta_Pgen'] * 0.001
+
+        df = df.loc[df['delta_Pcon'] > 0]
+        df = df.loc[df['delta_Pgen'] > 0]
 
     if not df_final:
         primera_semana = nombre_semana
@@ -339,7 +341,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
     if nombre:
         nombre_ = nombre.replace('-', '_')
 
-    max_data_count = df_var[vary[3]].max()
+    max_data_count = max(df_var[vary[3]].max(), 50)
     max_data_vary = df_var[vary[2]].max() + 0.005
 
     # iterar servicios
@@ -543,14 +545,9 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
     if nombre:
         nombre_ = nombre.replace('-', '_')
 
-    max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max())
+    max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max(), 50)
     max_data_vary = max(df_var[0][a_vary[0][2]].max(), df_var[1][a_vary[1][2]].max()) + 1
 
-    # en caso que sean muy parecidos poner la misma escala para columnas Nro datos y las variables
-    if -2 < ((max_data_vary - max_data_count) / max_data_vary) < 2:
-        max_data_count = max_data_vary / zoom_out_barras
-    else:
-        logger.info(f'{max_data_vary}, {max_data_count}')
     # iterar servicios
     for ss in df_var[0]['Servicio_Sentido'].unique():
         if ss not in df_var[1]['Servicio_Sentido'].unique():
@@ -867,6 +864,10 @@ def graficar_semana(dia_ini_, mes_, anno_, sem_especial=[], tipo_dia_='Laboral')
     g_pipeline(dia_ini_, mes_, anno_, sem_especial=sem_especial, tipo_dia=tipo_dia_)
 
     df_final = pd.concat(df_final)
+    if df_final.empty():
+        logger.warning(f'Esta semana no tiene data tracktec en su(s) dia(s) tipo {tipo_dia_}')
+        return
+
     sem_primera = primera_semana.replace('semana_', '')
     carpeta_guardar_graficos = f'graficos_{sem_primera}'
 
@@ -907,6 +908,10 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     g_pipeline(28, 9, 2020)
 
     df_final = pd.concat(df_final)
+    if df_final.empty():
+        logger.warning(f'Esta semana no tiene data tracktec en su(s) dia(s) tipo {tipo_dia_}')
+        return
+
     sem_primera = primera_semana.replace('semana_', '')
     sem_ultima = ultima_semana.replace('semana_', '')
     nombre_ = sem_primera
@@ -944,12 +949,12 @@ def main():
     # tipo_dia_interes puede ser 'Laboral' o 'Sabado' o 'Domingo'
     for tipo_dia_interes in ['Laboral', 'Sabado', 'Domingo']:
         graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
-        # graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
-        # graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
-        # graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
+        graficar_semana(21, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        graficar_semana(28, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
 
         # revisar que graficar_varias_semanas tenga estas mismas semanas
-        # graficar_varias_semanas(tipo_dia_=tipo_dia_interes)
+        graficar_varias_semanas(tipo_dia_=tipo_dia_interes)
         logger.info(f'Listo dias tipo {tipo_dia_interes}')
 
     logger.info('Listo todo')
