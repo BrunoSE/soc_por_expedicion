@@ -217,6 +217,7 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
     nombre_ = ''
     if nombre:
         nombre_ = nombre.replace('-', '_')
+        nombre_ = nombre_.replace(' hasta ', '_')
 
     for ss in df_fv['Servicio_Sentido'].unique():
         el_color = colores_2[contador % len(colores_2)][0]
@@ -340,6 +341,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
     nombre_ = ''
     if nombre:
         nombre_ = nombre.replace('-', '_')
+        nombre_ = nombre_.replace(' hasta ', '_')
 
     max_data_count = max(df_var[vary[3]].max(), 50)
     max_data_vary = df_var[vary[2]].max() + 0.005
@@ -544,6 +546,7 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
     nombre_ = ''
     if nombre:
         nombre_ = nombre.replace('-', '_')
+        nombre_ = nombre_.replace(' hasta ', '_')
 
     max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max(), 50)
     max_data_vary = max(df_var[0][a_vary[0][2]].max(), df_var[1][a_vary[1][2]].max()) + 1
@@ -743,6 +746,7 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     nombre_ = ''
     if nombre:
         nombre_ = nombre.replace('-', '_')
+        nombre_ = nombre_.replace(' hasta ', '_')
 
     # max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max())
     max_data_vary = df_var[0][a_vary[0][2]].max() * 1.5 + 0.01
@@ -918,7 +922,7 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
         carpeta_guardar_graficos = f'graficos_{sem_primera}'
     else:
         carpeta_guardar_graficos = f'graficos_{sem_primera}_{sem_ultima}'
-        nombre_ = f'{sem_primera}_{sem_ultima}'
+        nombre_ = f'{sem_primera} hasta {sem_ultima}'
 
     if not os.path.isdir(carpeta_guardar_graficos):
         logger.info(f'Creando carpeta {carpeta_guardar_graficos}')
@@ -933,13 +937,13 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     nombre_ = nombre_.replace('_', '-')
     logger.info(f'Graficando {tipo_dia_} {nombre_}')
 
-    graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=sem_primera)
-    graficar('delta_soc', tipo_dia=tipo_dia_, nombre=sem_primera)
-    # graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=sem_primera)
-    # graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=sem_primera)
-    graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=sem_primera)
-    graficar_soc_tv(tipo_dia=tipo_dia_, nombre=sem_primera)
-    graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=sem_primera)
+    graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
+    graficar('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
+    graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+    graficar_soc_tv(tipo_dia=tipo_dia_, nombre=nombre_)
+    graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
     os.chdir('..')
 
 
