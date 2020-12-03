@@ -31,8 +31,13 @@ def mantener_log():
     return logger
 
 
+# mantener un log y guardarlo
 logger = mantener_log()
-
+file_handler = logging.FileHandler('log.log')
+# no se escriben en archivo los debug, solo info hasta critical
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(file_format)
+logger.addHandler(file_handler)
 
 def descargar_GPS_ftp(fecha__):
     direccion_resumen = ('Bruno/Data_PerdidaTransmision/' + fecha__[:4] +
