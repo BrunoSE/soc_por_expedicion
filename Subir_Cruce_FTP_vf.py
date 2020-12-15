@@ -4,6 +4,7 @@ import pandas as pd
 import logging
 from datetime import timedelta
 from geopy import distance
+from time import sleep
 import ftplib
 import os
 global logger
@@ -38,6 +39,7 @@ file_handler = logging.FileHandler('log.log')
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(file_format)
 logger.addHandler(file_handler)
+
 
 def descargar_GPS_ftp(fecha__):
     direccion_resumen = ('Bruno/Data_PerdidaTransmision/' + fecha__[:4] +
@@ -133,7 +135,7 @@ for carpeta in carpetas:
         df_T = df_T.loc[df_T['patente'].isin(df_res['patente'].unique())]
         df_T = df_T.loc[~df_T['valor_soc'].isna()]
 
-        df_S = df_S.loc[df_S['Ruta']!=0]
+        df_S = df_S.loc[df_S['Ruta'] != 0]
         # SS196 incluye sentido, se saca con str[:-1]
         df_S = df_S.loc[df_S['SS196'].str[:-1].isin(df_res['Servicio'].unique())]
         df_S = df_S.loc[df_S['Ruta'].isin(df_res['Indice_mensual'].unique())]
