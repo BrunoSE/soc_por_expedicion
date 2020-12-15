@@ -11,6 +11,7 @@ global logger
 global file_format
 
 
+mes_minimo  = 11
 os.chdir('Cruce_Sonda_Ttec')
 
 
@@ -97,12 +98,12 @@ hostname = '192.168.11.101'
 username = 'bruno'
 passw = 'manzana'
 max_reintentos = 20
-archivos_subir = os.listdir('.')
-archivos_subir = [x for x in os.listdir('.') if x[-8:] == '.parquet']
-
+archivos_subir = []
 
 direccion_base = '/home/apple/Documentos/soc_por_expedicion'
 carpetas = [x for x in os.listdir(direccion_base) if x[:7] == 'semana_']
+carpetas = [x for x in carpetas if int(x.split('_')[2]) >= mes_minimo]
+
 logger.info(f'Carpetas por semana: {carpetas}')
 
 for carpeta in carpetas:
@@ -180,6 +181,7 @@ for carpeta in carpetas:
                 df_S.to_parquet(f'data_STf_{fecha}.parquet', compression='gzip')
             else:
                 df_ST.to_parquet(f'data_ST_{fecha}.parquet', compression='gzip')
+                archivos_subir.append(f'data_ST_{fecha}.parquet')
 
         else:
             logger.info(f'No hay datos cruzados entre ambas tablas')
@@ -214,4 +216,3 @@ for arch in archivos_subir:
         raise TimeoutError
 
 logger.info(f'Ahora esta todo en el FTP')
-

@@ -906,6 +906,10 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     primera_semana = ''
     ultima_semana = ''
 
+    g_pipeline(2, 11, 2020, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(9, 11, 2020, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(16, 11, 2020, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(23, 11, 2020, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(30, 11, 2020, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(7, 12, 2020, sem_especial=[1, 3, 4, 5, 6, 7], tipo_dia=tipo_dia_)
 
