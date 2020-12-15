@@ -428,7 +428,9 @@ if __name__ == '__main__':
     # pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(2, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(9, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(16, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(23, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(16, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(23, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(30, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(7, 12, 2020, reemplazar_data_ttec, reemplazar_resumen)
     logger.info('Listo todo')
 
