@@ -136,6 +136,10 @@ def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia=''):
         # filtrar
         df = df.loc[(df['Operativo'] == 'C')]
         df = df.loc[(df['Cumple_Triada_Revisada'] == 1)]
+        df = df.loc[(df['Cumple_TVE_TV '] == 'C')]
+        df = df.loc[(df['Pulsos_por_min'] >= 1.75)]
+        df = df.loc[(df['pctje_pulsos_FDR'] < 0.3)]
+
         df['pctje_dist_recorrida'] = df['distancia_recorrida'] / df['dist_Ruta']
         df = df.loc[df['pctje_dist_recorrida'] > 0.85]
         df = df.loc[df['pctje_dist_recorrida'] < 1.15]

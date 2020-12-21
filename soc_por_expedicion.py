@@ -271,11 +271,15 @@ def mezclar_data(fecha):
     df196r = df196r.loc[~(df196r['hora_inicio'].isna())]
     # df196r = df196r.loc[(df196r['Operativo'] == 'C')]
     # df196r = df196r.loc[(df196r['Cumple_Triada_Revisada'] == 1)]
+    # df196r = df196r.loc[(df196r['Cumple_TVE_TV '] == 'C')]
+    # df196r = df196r.loc[(df196r['Pulsos_por_min'] >= 1.75)]
+    # df196r = df196r.loc[(df196r['pctje_pulsos_FDR'] < 0.3)]
+
     # df196r['pctje_dist_recorrida'] = df196r['distancia_recorrida'] / df196r['dist_Ruta']
     # df196r = df196r.loc[df196r.pctje_dist_recorrida > 0.85]
     # df196r = df196r.loc[df196r.pctje_dist_recorrida < 1.15]
+
     # filtros adicionales que podria incluir:
-    # pulsos por minutos cercano a 2
     # tiempo con perdida transmision menor a 5 min
     # distancia con perdida de transmision menor a 1 km
     # no mas de 3 pulsos fuera de ruta
@@ -421,16 +425,15 @@ if __name__ == '__main__':
     logger = mantener_log()
 
     reemplazar_data_ttec = False
-    reemplazar_resumen = False
+    reemplazar_resumen = True
     # pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 6, 7])
     # pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # pipeline(2, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # pipeline(9, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # pipeline(16, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    # pipeline(23, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(2, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(9, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(16, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(23, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
     pipeline(30, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
     pipeline(7, 12, 2020, reemplazar_data_ttec, reemplazar_resumen)
     logger.info('Listo todo')
-
