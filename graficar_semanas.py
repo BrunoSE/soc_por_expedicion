@@ -60,7 +60,6 @@ def mantener_log():
     print_handler.setLevel(logging.DEBUG)
     print_handler.setFormatter(print_format)
     logger.addHandler(print_handler)
-    return logger
 
 
 def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia=''):
@@ -162,7 +161,7 @@ def g_pipeline(dia_ini, mes, anno, sem_especial=[], tipo_dia=''):
 
 
 def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
-                     tipo_dia='Laboral', nombre=''):
+                     tipo_dia='Laboral', nombre='', guardar_html=False):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de una variable
     if not os.path.isdir(f'{variable_graficar}_{tipo_dia}'):
         logger.info(f'Creando carpeta {variable_graficar}_{tipo_dia}')
@@ -221,7 +220,13 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
     nombre_ = ''
     if nombre:
         nombre_ = nombre.replace('-', '_')
-        nombre_ = nombre_.replace(' hasta ', '_')
+        if ' hasta ' in nombre:
+            # caso con varias semanas
+            nombre_ = nombre_.replace(' hasta ', '_')
+            nombre = 'desde ' + nombre
+        else:
+            # caso con una semana
+            nombre = 'de semana ' + nombre
 
     for ss in df_fv['Servicio_Sentido'].unique():
         el_color = colores_2[contador % len(colores_2)][0]
@@ -246,20 +251,20 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
                          tickangle=270
                          )
 
-        texto_titulo = f"Variación en %SOC por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
+        texto_titulo = f"Variación en %SOC por expedición {ss} (Dias {tipo_dia} {nombre})"
         if variable_graficar == 'delta_soc':
             fig.update_yaxes(title_text="", tickformat=".1%",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal)
 
         elif variable_graficar == 'delta_Pcon':
-            texto_titulo = f"Potencia consumida por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
+            texto_titulo = f"Potencia consumida por expedición {ss} (Dias {tipo_dia} {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal)
 
         elif variable_graficar == 'delta_Pgen':
-            texto_titulo = f"Potencia generada por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
+            texto_titulo = f"Potencia generada por expedición {ss} (Dias {tipo_dia} {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal)
@@ -274,13 +279,15 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
         )
 
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
-                           config={'scrollZoom': True, 'displayModeBar': True})
+            if guardar_html:
+                fig.write_html(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
+                               config={'scrollZoom': True, 'displayModeBar': True})
             fig.write_image(f'Boxplot_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'BoxplotCO_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
-                           config={'scrollZoom': True, 'displayModeBar': True})
+            if guardar_html:
+                fig.write_html(f'BoxplotCO_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
+                               config={'scrollZoom': True, 'displayModeBar': True})
             fig.write_image(f'BoxplotCO_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
 
@@ -288,7 +295,7 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
 
 
 def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
-             tipo_dia='Laboral', nombre=''):
+             tipo_dia='Laboral', nombre='', guardar_html=False):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de una variable
     if not os.path.isdir(f'{variable_graficar}_{tipo_dia}'):
         logger.info(f'Creando carpeta {variable_graficar}_{tipo_dia}')
@@ -345,7 +352,13 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
     nombre_ = ''
     if nombre:
         nombre_ = nombre.replace('-', '_')
-        nombre_ = nombre_.replace(' hasta ', '_')
+        if ' hasta ' in nombre:
+            # caso con varias semanas
+            nombre_ = nombre_.replace(' hasta ', '_')
+            nombre = 'desde ' + nombre
+        else:
+            # caso con una semana
+            nombre = 'de semana ' + nombre
 
     max_data_count = max(df_var[vary[3]].max(), 50)
     max_data_vary = df_var[vary[2]].max() + 0.005
@@ -416,7 +429,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
                          tickangle=270
                          )
 
-        texto_titulo = f"Variación en %SOC por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
+        texto_titulo = f"Variación en %SOC por expedición {ss} (Dias {tipo_dia} {nombre})"
         if variable_graficar == 'delta_soc':
             fig.update_yaxes(title_text="", tickformat=".1%",
                              range=[0, max_data_vary],
@@ -424,21 +437,21 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
                              secondary_y=False)
 
         elif variable_graficar == 'delta_Pcon':
-            texto_titulo = f"Potencia consumida por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
+            texto_titulo = f"Potencia consumida por expedición {ss} (Dias {tipo_dia} {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
 
         elif variable_graficar == 'delta_Pgen':
-            texto_titulo = f"Potencia generada por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
+            texto_titulo = f"Potencia generada por expedición {ss} (Dias {tipo_dia} {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
 
         elif variable_graficar == 'tiempo_viaje':
-            texto_titulo = f"Tiempo de viaje {ss} (Dias {tipo_dia} de semana {nombre})"
+            texto_titulo = f"Tiempo de viaje {ss} (Dias {tipo_dia} {nombre})"
             fig.update_yaxes(title_text="[minutos]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
@@ -453,13 +466,15 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
         )
 
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
-                           config={'scrollZoom': True, 'displayModeBar': True})
+            if guardar_html:
+                fig.write_html(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
+                               config={'scrollZoom': True, 'displayModeBar': True})
             fig.write_image(f'graf_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'grafico_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
-                           config={'scrollZoom': True, 'displayModeBar': True})
+            if guardar_html:
+                fig.write_html(f'grafico_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.html',
+                               config={'scrollZoom': True, 'displayModeBar': True})
             fig.write_image(f'grafico_{ss}_{variable_graficar}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
 
@@ -469,7 +484,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
 
 def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
                          filtrar_outliers_intercuartil: bool = True,
-                         tipo_dia='Laboral', nombre=''):
+                         tipo_dia='Laboral', nombre='', guardar_html=False):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
     if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}'):
         logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}_{tipo_dia}')
@@ -550,7 +565,13 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
     nombre_ = ''
     if nombre:
         nombre_ = nombre.replace('-', '_')
-        nombre_ = nombre_.replace(' hasta ', '_')
+        if ' hasta ' in nombre:
+            # caso con varias semanas
+            nombre_ = nombre_.replace(' hasta ', '_')
+            nombre = 'desde ' + nombre
+        else:
+            # caso con una semana
+            nombre = 'de semana ' + nombre
 
     max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max(), 50)
     max_data_vary = max(df_var[0][a_vary[0][2]].max(), df_var[1][a_vary[1][2]].max()) + 1
@@ -631,13 +652,13 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
         texto_titulo = ""
         if ((variable_graficar == 'delta_Pcon' and variable_graficar_2 == 'delta_Pgen') or
                 (variable_graficar == 'delta_Pgen' and variable_graficar_2 == 'delta_Pcon')):
-            texto_titulo = f"Potencia consumida y generada por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
+            texto_titulo = f"Potencia consumida y generada por expedición {ss} (Dias {tipo_dia} {nombre})"
             fig.update_yaxes(title_text="Potencia [kW]",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
         else:
-            texto_titulo = f"{variable_graficar} y {variable_graficar_2} por expedición {ss} (Dias {tipo_dia} de semana {nombre})"
+            texto_titulo = f"{variable_graficar} y {variable_graficar_2} por expedición {ss} (Dias {tipo_dia} {nombre})"
             fig.update_yaxes(title_text="",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
@@ -652,13 +673,15 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
         )
 
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
-                           config={'scrollZoom': True, 'displayModeBar': True})
+            if guardar_html:
+                fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
+                               config={'scrollZoom': True, 'displayModeBar': True})
             fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
-                           config={'scrollZoom': True, 'displayModeBar': True})
+            if guardar_html:
+                fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
+                               config={'scrollZoom': True, 'displayModeBar': True})
             fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
 
@@ -668,7 +691,7 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
 def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                     variable_graficar_2: str = 'tiempo_viaje',
                     filtrar_outliers_intercuartil: bool = True,
-                    incluir_p75y25: bool = False, tipo_dia='Laboral', nombre=''):
+                    incluir_p75y25: bool = False, tipo_dia='Laboral', nombre='', guardar_html=False):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
     if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}'):
         logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}_{tipo_dia}')
@@ -750,7 +773,13 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     nombre_ = ''
     if nombre:
         nombre_ = nombre.replace('-', '_')
-        nombre_ = nombre_.replace(' hasta ', '_')
+        if ' hasta ' in nombre:
+            # caso con varias semanas
+            nombre_ = nombre_.replace(' hasta ', '_')
+            nombre = 'desde ' + nombre
+        else:
+            # caso con una semana
+            nombre = 'de semana ' + nombre
 
     # max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max())
     max_data_vary = df_var[0][a_vary[0][2]].max() * 1.5 + 0.01
@@ -831,7 +860,7 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
 
         texto_titulo = (f"{dict_leyenda[a_vgrafricar[0]]} y "
                         f"{dict_leyenda[a_vgrafricar[1]]} por expedición {ss}"
-                        f" (Dias {tipo_dia} de semana {nombre})")
+                        f" (Dias {tipo_dia} {nombre})")
         fig.update_yaxes(title_text="",
                          range=[0, max_data_vary],
                          gridcolor=colorLineas_ejeYppal,
@@ -848,13 +877,15 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
         )
 
         if filtrar_outliers_intercuartil:
-            fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
-                           config={'scrollZoom': True, 'displayModeBar': True})
+            if guardar_html:
+                fig.write_html(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
+                               config={'scrollZoom': True, 'displayModeBar': True})
             fig.write_image(f'graf_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
         else:
-            fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
-                           config={'scrollZoom': True, 'displayModeBar': True})
+            if guardar_html:
+                fig.write_html(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.html',
+                               config={'scrollZoom': True, 'displayModeBar': True})
             fig.write_image(f'grafico_{ss}_{variable_graficar}_{variable_graficar_2}_{tipo_dia}_{nombre_}.png',
                             width=1600, height=800)
 
@@ -929,6 +960,10 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
         carpeta_guardar_graficos = f'graficos_{sem_primera}'
     else:
         carpeta_guardar_graficos = f'graficos_{sem_primera}_{sem_ultima}'
+        # Cambiar titulo graficos para que digan desde lunes X a domingo Y+6 en vez de lunes X a lunes Y
+        sem_ultima = datetime.datetime.strptime(sem_ultima, "%Y_%m_%d")
+        sem_ultima = sem_ultima + datetime.timedelta(days=6)
+        sem_ultima = sem_ultima.strftime("%Y_%m_%d")
         nombre_ = f'{sem_primera} hasta {sem_ultima}'
 
     if not os.path.isdir(carpeta_guardar_graficos):
@@ -955,7 +990,7 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
 
 
 def main():
-    logger = mantener_log()
+    mantener_log()
     # tipo_dia_interes puede ser 'Laboral' o 'Sabado' o 'Domingo'
     for tipo_dia_interes in ['Laboral', 'Sabado', 'Domingo']:
         # graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)

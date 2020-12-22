@@ -30,11 +30,10 @@ def mantener_log():
     print_handler.setLevel(logging.DEBUG)
     print_handler.setFormatter(print_format)
     logger.addHandler(print_handler)
-    return logger
 
 
 # mantener un log y guardarlo
-logger = mantener_log()
+mantener_log()
 file_handler = logging.FileHandler('log.log')
 # no se escriben en archivo los debug, solo info hasta critical
 file_handler.setLevel(logging.INFO)

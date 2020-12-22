@@ -32,7 +32,6 @@ def mantener_log():
     print_handler.setLevel(logging.DEBUG)
     print_handler.setFormatter(print_format)
     logger.addHandler(print_handler)
-    return logger
 
 
 def consultar_soc_id(id_evento):
@@ -422,7 +421,7 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
 
 
 if __name__ == '__main__':
-    logger = mantener_log()
+    mantener_log()
 
     reemplazar_data_ttec = False
     reemplazar_resumen = False
