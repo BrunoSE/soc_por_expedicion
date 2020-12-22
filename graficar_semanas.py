@@ -253,7 +253,7 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
 
         texto_titulo = f"Variación en %SOC por expedición {ss} (Dias {tipo_dia} {nombre})"
         if variable_graficar == 'delta_soc':
-            fig.update_yaxes(title_text="", tickformat=".1%",
+            fig.update_yaxes(title_text="", tickformat=".0%",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal)
 
@@ -296,7 +296,7 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
 
 def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
              tipo_dia='Laboral', nombre='', guardar_html=False,
-             percentiles_tv = (.20, .65, .80)):
+             percentiles_tv=(.20, .65, .80)):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de una variable
     if not os.path.isdir(f'{variable_graficar}_{tipo_dia}'):
         logger.info(f'Creando carpeta {variable_graficar}_{tipo_dia}')
@@ -314,11 +314,11 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
                 f'{variable_graficar}_count']
 
     if variable_graficar == 'tiempo_viaje':
-        percentiles_text = [int(100*x) for x in percentiles_tv]
+        percentiles_text = [int(100 * x) for x in percentiles_tv]
         vary = [f'{variable_graficar}_{percentiles_text[0]:d}%',
-                   f'{variable_graficar}_{percentiles_text[1]:d}%',
-                   f'{variable_graficar}_{percentiles_text[2]:d}%',
-                   f'{variable_graficar}_count']
+                f'{variable_graficar}_{percentiles_text[1]:d}%',
+                f'{variable_graficar}_{percentiles_text[2]:d}%',
+                f'{variable_graficar}_count']
     else:
         vary = [f'{variable_graficar}_25%',
                 f'{variable_graficar}_50%',
@@ -347,7 +347,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
             select1 = ((df_fv['MH_inicio'] == row[0]) & (df_fv['Servicio_Sentido'] == row[1]))
             select2 = ((df_fv[variable_graficar] >= row[2]) & (df_fv[variable_graficar] <= row[3]))
             df_fv = df_fv.loc[((select1 & select2) | (~select1))]
-        
+
         if variable_graficar == 'tiempo_viaje':
             df_var = df_fv.groupby(by=columnas_groupby).describe(percentiles=percentiles_tv).reset_index()
         else:
@@ -452,7 +452,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
 
         texto_titulo = f"Variación en %SOC por expedición {ss} (Dias {tipo_dia} {nombre})"
         if variable_graficar == 'delta_soc':
-            fig.update_yaxes(title_text="", tickformat=".1%",
+            fig.update_yaxes(title_text="", tickformat=".0%",
                              range=[0, max_data_vary],
                              gridcolor=colorLineas_ejeYppal,
                              secondary_y=False)
@@ -713,7 +713,7 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                     variable_graficar_2: str = 'tiempo_viaje',
                     filtrar_outliers_intercuartil: bool = True,
                     incluir_percentiles_graf: bool = False, tipo_dia='Laboral',
-                    nombre='', guardar_html=False, percentiles_tv = (.20, .65, .80)):
+                    nombre='', guardar_html=False, percentiles_tv=(.20, .65, .80)):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
     if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}'):
         logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}_{tipo_dia}')
@@ -727,7 +727,6 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     dict_leyenda = {'delta_soc': 'Delta %SOC',
                     'tiempo_viaje': 'T_Viaje [min]'}
 
-
     vary = [f'{variable_graficar}_25%',
             f'{variable_graficar}_50%',
             f'{variable_graficar}_75%',
@@ -740,16 +739,16 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
 
     # vary_2 deberia ser tiempo de viaje
     if variable_graficar_2 == 'tiempo_viaje':
-        percentiles_text = [int(100*x) for x in percentiles_tv]
+        percentiles_text = [int(100 * x) for x in percentiles_tv]
         vary_2 = [f'{variable_graficar_2}_{percentiles_text[0]:d}%',
-                   f'{variable_graficar_2}_{percentiles_text[1]:d}%',
-                   f'{variable_graficar_2}_{percentiles_text[2]:d}%',
-                   f'{variable_graficar_2}_count']
+                  f'{variable_graficar_2}_{percentiles_text[1]:d}%',
+                  f'{variable_graficar_2}_{percentiles_text[2]:d}%',
+                  f'{variable_graficar_2}_count']
     else:
         vary_2 = [f'{variable_graficar_2}_25%',
-                   f'{variable_graficar_2}_50%',
-                   f'{variable_graficar_2}_75%',
-                   f'{variable_graficar_2}_count']
+                  f'{variable_graficar_2}_50%',
+                  f'{variable_graficar_2}_75%',
+                  f'{variable_graficar_2}_count']
 
     columnas_de_interes = [x for x in columnas_groupby]
     columnas_de_interes.append(variable_graficar)
@@ -827,8 +826,8 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
             nombre = 'de semana ' + nombre
 
     # max_data_count = max(df_var[0][a_vary[0][3]].max(), df_var[1][a_vary[1][3]].max())
-    max_data_vary = df_var[0][a_vary[0][2]].max() * 1.5 + 0.01
-    max_data_vary2 = df_var[1][a_vary[1][2]].max() + 1
+    max_data_vary = df_var[0][a_vary[0][2]].max() * 1.5
+    max_data_vary2 = df_var[1][a_vary[1][2]].max()
 
     # iterar servicios
     for ss in df_var[0]['Servicio_Sentido'].unique():
@@ -911,7 +910,7 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                          gridcolor=colorLineas_ejeYppal,
                          secondary_y=False)
         if variable_graficar == 'delta_soc':
-            fig.update_yaxes(tickformat=".1%", secondary_y=False)
+            fig.update_yaxes(tickformat=".0%", secondary_y=False)
 
         # Add figure title
         fig.update_layout(title=go.layout.Title(
@@ -1038,7 +1037,7 @@ def main():
     mantener_log()
     # tipo_dia_interes puede ser 'Laboral' o 'Sabado' o 'Domingo'
     for tipo_dia_interes in ['Laboral', 'Sabado', 'Domingo']:
-        # graficar_semana(7, 9, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
+        # graficar_semana(23, 11, 2020, sem_especial=[], tipo_dia_=tipo_dia_interes)
         # graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
 
         # revisar que graficar_varias_semanas tenga estas mismas semanas
