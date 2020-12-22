@@ -265,7 +265,7 @@ def mezclar_data(fecha):
     servicios_de_interes = ['F41', 'F46', 'F48', 'F63c', 'F67e', 'F83c',
                             'F69', 'F73', 'F81']
 
-    df196r = pd.read_excel(f'Cruce_196resumen_data_{fecha}_revisado.xlsx')
+    df196r = pd.read_excel(f'Cruce_196resumen_data_{fecha}_revisado.xlsx', engine='openpyxl')
     logger.info(f"Expediciones iniciales en resumen diario: {len(df196r.index)}")
     df196r = df196r.loc[df196r['Servicio'].isin(servicios_de_interes)]
     df196r = df196r.loc[~(df196r['hora_inicio'].isna())]
@@ -425,15 +425,15 @@ if __name__ == '__main__':
     logger = mantener_log()
 
     reemplazar_data_ttec = False
-    reemplazar_resumen = True
+    reemplazar_resumen = False
     # pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 6, 7])
     # pipeline(21, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(28, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(2, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(9, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(16, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(23, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(30, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(2, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(9, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(16, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(23, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(30, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
     pipeline(7, 12, 2020, reemplazar_data_ttec, reemplazar_resumen)
     logger.info('Listo todo')
