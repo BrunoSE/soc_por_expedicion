@@ -295,7 +295,8 @@ def graficar_boxplot(variable_graficar: str, filtrar_outliers_intercuartil: bool
 
 
 def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
-             tipo_dia='Laboral', nombre='', guardar_html=False):
+             tipo_dia='Laboral', nombre='', guardar_html=False,
+             percentiles_tv = (.20, .65, .80)):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de una variable
     if not os.path.isdir(f'{variable_graficar}_{tipo_dia}'):
         logger.info(f'Creando carpeta {variable_graficar}_{tipo_dia}')
@@ -306,32 +307,52 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
     os.chdir(f'{variable_graficar}_{tipo_dia}')
 
     global df_final
-    vary = [f'{variable_graficar}_25%',
-            f'{variable_graficar}_50%',
-            f'{variable_graficar}_75%',
-            f'{variable_graficar}_count']
+
+    vary_ini = [f'{variable_graficar}_25%',
+                f'{variable_graficar}_50%',
+                f'{variable_graficar}_75%',
+                f'{variable_graficar}_count']
+
+    if variable_graficar == 'tiempo_viaje':
+        percentiles_text = [int(100*x) for x in percentiles_tv]
+        vary = [f'{variable_graficar_2}_{percentiles_text[0]:d}%',
+                   f'{variable_graficar_2}_{percentiles_text[1]:d}%',
+                   f'{variable_graficar_2}_{percentiles_text[2]:d}%',
+                   f'{variable_graficar_2}_count']
+    else:
+        vary = [f'{variable_graficar}_25%',
+                f'{variable_graficar}_50%',
+                f'{variable_graficar}_75%',
+                f'{variable_graficar}_count']
 
     columnas_de_interes = [x for x in columnas_groupby]
     columnas_de_interes.append(variable_graficar)
 
     df_fv = df_final.loc[~(df_final[variable_graficar].isna()), columnas_de_interes]
     # describe entrega col_count, col_mean, col_std, col_min, col_max, col_50%, 25% y 75%
-    df_var = df_fv.groupby(by=columnas_groupby).describe().reset_index()
+    if filtrar_outliers_intercuartil:
+        df_var = df_fv.groupby(by=columnas_groupby).describe().reset_index()
+    else:
+        df_var = df_fv.groupby(by=columnas_groupby).describe(percentiles=percentiles_tv).reset_index()
     df_var.columns = ['_'.join(col).rstrip('_') for col in df_var.columns.values]
     # filtrar MH con menos de 3 datos
     df_var = df_var.loc[df_var[f'{variable_graficar}_count'] >= minimos_datos_por_mh]
 
     if filtrar_outliers_intercuartil:
-        df_var['IQR'] = df_var[vary[2]] - df_var[vary[0]]
-        df_var['cota_inf'] = df_var[vary[0]] - 1.5 * df_var['IQR']
-        df_var['cota_sup'] = df_var[vary[2]] + 1.5 * df_var['IQR']
+        df_var['IQR'] = df_var[vary_ini[2]] - df_var[vary_ini[0]]
+        df_var['cota_inf'] = df_var[vary_ini[0]] - 1.5 * df_var['IQR']
+        df_var['cota_sup'] = df_var[vary_ini[2]] + 1.5 * df_var['IQR']
         for row in zip(df_var['MH_inicio'], df_var['Servicio_Sentido'],
                        df_var['cota_inf'], df_var['cota_sup']):
             select1 = ((df_fv['MH_inicio'] == row[0]) & (df_fv['Servicio_Sentido'] == row[1]))
             select2 = ((df_fv[variable_graficar] >= row[2]) & (df_fv[variable_graficar] <= row[3]))
             df_fv = df_fv.loc[((select1 & select2) | (~select1))]
+        
+        if variable_graficar == 'tiempo_viaje':
+            df_var = df_fv.groupby(by=columnas_groupby).describe(percentiles=percentiles_tv).reset_index()
+        else:
+            df_var = df_fv.groupby(by=columnas_groupby).describe().reset_index()
 
-        df_var = df_fv.groupby(by=columnas_groupby).describe().reset_index()
         df_var.columns = ['_'.join(col).rstrip('_') for col in df_var.columns.values]
         # filtrar MH con menos de 2 datos
         df_var = df_var.loc[df_var[f'{variable_graficar}_count'] >= minimos_datos_por_mh]
@@ -381,7 +402,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
 
         fig.add_trace(
             go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[2]],
-                       name=f'percentil75',
+                       name=f'percentil_inf',
                        mode='lines',
                        connectgaps=True,
                        opacity=opacity_percentiles,
@@ -389,7 +410,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
 
         fig.add_trace(
             go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[1]],
-                       name=f'Mediana',
+                       name=f'{variable_graficar}',
                        mode='lines+markers',
                        connectgaps=True,
                        marker=dict(size=marker_size,
@@ -398,7 +419,7 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
 
         fig.add_trace(
             go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[vary[0]],
-                       name=f'percentil25',
+                       name=f'percentil_sup',
                        mode='lines',
                        connectgaps=True,
                        opacity=opacity_percentiles,
@@ -691,7 +712,8 @@ def graficar_potencias_2(variable_graficar: str, variable_graficar_2: str,
 def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                     variable_graficar_2: str = 'tiempo_viaje',
                     filtrar_outliers_intercuartil: bool = True,
-                    incluir_p75y25: bool = False, tipo_dia='Laboral', nombre='', guardar_html=False):
+                    incluir_percentiles_graf: bool = False, tipo_dia='Laboral',
+                    nombre='', guardar_html=False, percentiles_tv = (.20, .65, .80)):
     # para cada ss grafica mediana y percentiles 25 y 75 por mh de dos variables
     if not os.path.isdir(f'{variable_graficar}_{variable_graficar_2}_{tipo_dia}'):
         logger.info(f'Creando carpeta {variable_graficar}_{variable_graficar_2}_{tipo_dia}')
@@ -705,15 +727,29 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     dict_leyenda = {'delta_soc': 'Delta %SOC',
                     'tiempo_viaje': 'T_Viaje [min]'}
 
+
     vary = [f'{variable_graficar}_25%',
             f'{variable_graficar}_50%',
             f'{variable_graficar}_75%',
             f'{variable_graficar}_count']
 
-    vary_2 = [f'{variable_graficar_2}_25%',
-              f'{variable_graficar_2}_50%',
-              f'{variable_graficar_2}_75%',
-              f'{variable_graficar_2}_count']
+    vary_2b = [f'{variable_graficar_2}_25%',
+               f'{variable_graficar_2}_50%',
+               f'{variable_graficar_2}_75%',
+               f'{variable_graficar_2}_count']
+
+    # vary_2 deberia ser tiempo de viaje
+    if variable_graficar_2 == 'tiempo_viaje':
+        percentiles_text = [int(100*x) for x in percentiles_tv]
+        vary_2 = [f'{variable_graficar_2}_{percentiles_text[0]:d}%',
+                   f'{variable_graficar_2}_{percentiles_text[1]:d}%',
+                   f'{variable_graficar_2}_{percentiles_text[2]:d}%',
+                   f'{variable_graficar_2}_count']
+    else:
+        vary_2 = [f'{variable_graficar_2}_25%',
+                   f'{variable_graficar_2}_50%',
+                   f'{variable_graficar_2}_75%',
+                   f'{variable_graficar_2}_count']
 
     columnas_de_interes = [x for x in columnas_groupby]
     columnas_de_interes.append(variable_graficar)
@@ -721,6 +757,7 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
     columnas_de_interes_2.append(variable_graficar_2)
 
     a_vgrafricar = [variable_graficar, variable_graficar_2]
+    b_vary = [vary, vary_2b]
     a_vary = [vary, vary_2]
 
     # observar que hay un supuesto implícito:
@@ -732,15 +769,20 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
 
     for i in [0, 1]:
         # describe entrega col_count, col_mean, col_std, col_min, col_max, col_50%, 25% y 75%
-        df_vari = df_fv[i].groupby(by=columnas_groupby).describe().reset_index()
+        if a_vgrafricar[i] == 'tiempo_viaje' and not filtrar_outliers_intercuartil:
+            # en caso que no se quiera filtrar outliers, sacar percentiles segun percentiles_tv
+            df_vari = df_fv[i].groupby(by=columnas_groupby).describe(percentiles=percentiles_tv).reset_index()
+        else:
+            df_vari = df_fv[i].groupby(by=columnas_groupby).describe().reset_index()
+
         df_vari.columns = ['_'.join(col).rstrip('_') for col in df_vari.columns.values]
         # filtrar MH con menos de 3 datos
         df_vari = df_vari.loc[df_vari[f'{a_vgrafricar[i]}_count'] >= minimos_datos_por_mh]
 
         if filtrar_outliers_intercuartil:
-            df_vari['IQR'] = df_vari[a_vary[i][2]] - df_vari[a_vary[i][0]]
-            df_vari['cota_inf'] = df_vari[a_vary[i][0]] - 1.5 * df_vari['IQR']
-            df_vari['cota_sup'] = df_vari[a_vary[i][2]] + 1.5 * df_vari['IQR']
+            df_vari['IQR'] = df_vari[b_vary[i][2]] - df_vari[b_vary[i][0]]
+            df_vari['cota_inf'] = df_vari[b_vary[i][0]] - 1.5 * df_vari['IQR']
+            df_vari['cota_sup'] = df_vari[b_vary[i][2]] + 1.5 * df_vari['IQR']
             for row in zip(df_vari['MH_inicio'], df_vari['Servicio_Sentido'],
                            df_vari['cota_inf'], df_vari['cota_sup']):
                 select1 = ((df_fv[i]['MH_inicio'] == row[0]) &
@@ -749,7 +791,10 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                            (df_fv[i][a_vgrafricar[i]] <= row[3]))
                 df_fv[i] = df_fv[i].loc[((select1 & select2) | (~select1))]
 
-            df_vari = df_fv[i].groupby(by=columnas_groupby).describe().reset_index()
+            if a_vgrafricar[i] == 'tiempo_viaje':
+                df_vari = df_fv[i].groupby(by=columnas_groupby).describe(percentiles=percentiles_tv).reset_index()
+            else:
+                df_vari = df_fv[i].groupby(by=columnas_groupby).describe().reset_index()
             df_vari.columns = ['_'.join(col).rstrip('_') for col in df_vari.columns.values]
             # filtrar MH con menos de 2 datos
             df_vari = df_vari.loc[df_vari[f'{a_vgrafricar[i]}_count'] >= minimos_datos_por_mh]
@@ -806,10 +851,10 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                            how='left',
                            on='Media Hora')
 
-            if incluir_p75y25:
+            if incluir_percentiles_graf:
                 fig.add_trace(
                     go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][2]],
-                               name=f'percentil75',
+                               name=f'percentil_inf',
                                mode='lines',
                                connectgaps=True,
                                opacity=opacity_percentiles,
@@ -818,7 +863,7 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
 
             fig.add_trace(
                 go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][1]],
-                           name=f'Mediana {dict_leyenda[a_vgrafricar[i]]}',
+                           name=f'{dict_leyenda[a_vgrafricar[i]]}',
                            mode='lines+markers',
                            connectgaps=True,
                            marker=dict(size=marker_size,
@@ -826,10 +871,10 @@ def graficar_soc_tv(variable_graficar: str = 'delta_soc',
                            line_color=el_color),
                 secondary_y=bool(i))
 
-            if incluir_p75y25:
+            if incluir_percentiles_graf:
                 fig.add_trace(
                     go.Scatter(x=dfx['Media Hora'].dt.time, y=dfx[a_vary[i][0]],
-                               name=f'percentil25',
+                               name=f'percentil_sup',
                                mode='lines',
                                connectgaps=True,
                                opacity=opacity_percentiles,
@@ -979,13 +1024,13 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     nombre_ = nombre_.replace('_', '-')
     logger.info(f'Graficando {tipo_dia_} {nombre_}')
 
-    graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
-    graficar('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
-    graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+    # mejor hacer los dos juntos graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=nombre_)
+    # mejor hacer los dos juntos  graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
     graficar_soc_tv(tipo_dia=tipo_dia_, nombre=nombre_)
-    graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
+    # graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
     os.chdir('..')
 
 
