@@ -24,7 +24,7 @@ dict_mh_date_str = dict(zip(mh_del_dia_str, mh_del_dia))
 
 # para crear groupby
 columnas_groupby = ['Servicio', 'Sentido', 'Servicio_Sentido', 'MH_inicio']
-minimos_datos_por_mh = 1
+minimos_datos_por_mh = 4
 
 # para plotear
 marcadores = ['circle', 'square', 'diamond', 'pentagon', 'triangle-up',
@@ -315,10 +315,10 @@ def graficar(variable_graficar: str, filtrar_outliers_intercuartil: bool = True,
 
     if variable_graficar == 'tiempo_viaje':
         percentiles_text = [int(100*x) for x in percentiles_tv]
-        vary = [f'{variable_graficar_2}_{percentiles_text[0]:d}%',
-                   f'{variable_graficar_2}_{percentiles_text[1]:d}%',
-                   f'{variable_graficar_2}_{percentiles_text[2]:d}%',
-                   f'{variable_graficar_2}_count']
+        vary = [f'{variable_graficar}_{percentiles_text[0]:d}%',
+                   f'{variable_graficar}_{percentiles_text[1]:d}%',
+                   f'{variable_graficar}_{percentiles_text[2]:d}%',
+                   f'{variable_graficar}_count']
     else:
         vary = [f'{variable_graficar}_25%',
                 f'{variable_graficar}_50%',
@@ -1024,13 +1024,13 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     nombre_ = nombre_.replace('_', '-')
     logger.info(f'Graficando {tipo_dia_} {nombre_}')
 
-    # graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+    graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
+    graficar('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
     # mejor hacer los dos juntos graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=nombre_)
     # mejor hacer los dos juntos  graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+    graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
     graficar_soc_tv(tipo_dia=tipo_dia_, nombre=nombre_)
-    # graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
+    graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
     os.chdir('..')
 
 
