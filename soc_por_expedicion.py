@@ -337,10 +337,17 @@ def mezclar_data(fecha):
     df196r_ef['delta_Pcon'] = df196r_ef['valor_ptc_Ttec_fin'] - df196r_ef['valor_ptc_Ttec_ini']
     df196r_ef['delta_Pgen'] = df196r_ef['valor_ptg_Ttec_ini'] - df196r_ef['valor_ptg_Ttec_fin']
     df196r_ef.sort_values(by=['PPU', 'hora_inicio'], inplace=True)
-    df196r_ef['Intervalo'] = pd.to_datetime(df196r_ef['Intervalo'], errors='raise',
-                                            format="%H:%M:%S")
 
-    df196r_ef.to_parquet(f'data_196rE_{fecha}.parquet', compression='gzip')
+    try:
+        df196r_ef['Intervalo'] = pd.to_datetime(df196r_ef['Intervalo'], errors='ignore',
+                                                format="%H:%M:%S")
+        df196r_ef.to_parquet(f'data_196rE_{fecha}.parquet', compression='gzip')
+    except ValueError:
+        df196r_ef['Intervalo'] = df196r_ef['Intervalo'].str[-8:]
+        df196r_ef['Intervalo'] = pd.to_datetime(df196r_ef['Intervalo'], errors='raise',
+                                                format="%H:%M:%S")
+        df196r_ef.to_parquet(f'data_196rE_{fecha}.parquet', compression='gzip')
+
     return None
 
 
@@ -434,5 +441,7 @@ if __name__ == '__main__':
     # pipeline(16, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(23, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(30, 11, 2020, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(7, 12, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(7, 12, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(14, 12, 2020, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(21, 12, 2020, reemplazar_data_ttec, reemplazar_resumen)
     logger.info('Listo todo')
