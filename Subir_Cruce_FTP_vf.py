@@ -11,7 +11,7 @@ global logger
 global file_format
 
 
-mes_minimo  = 11
+mes_de_interes  = 2
 os.chdir('Cruce_Sonda_Ttec')
 
 
@@ -101,7 +101,7 @@ archivos_subir = []
 
 direccion_base = '/home/apple/Documentos/soc_por_expedicion'
 carpetas = [x for x in os.listdir(direccion_base) if x[:7] == 'semana_']
-carpetas = [x for x in carpetas if int(x.split('_')[2]) >= mes_minimo]
+carpetas = [x for x in carpetas if int(x.split('_')[2]) == mes_de_interes]
 
 logger.info(f'Carpetas por semana: {carpetas}')
 

@@ -992,7 +992,14 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     g_pipeline(30, 11, 2020, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(7, 12, 2020, sem_especial=[1, 3, 4, 5, 6, 7], tipo_dia=tipo_dia_)
     g_pipeline(14, 12, 2020, sem_especial=[], tipo_dia=tipo_dia_)
-    g_pipeline(21, 12, 2020, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(21, 12, 2020, sem_especial=[1, 2, 3, 4, 6, 7], tipo_dia=tipo_dia_)
+    g_pipeline(28, 12, 2020, sem_especial=[1, 2, 3, 4, 6, 7], tipo_dia=tipo_dia_)
+    g_pipeline(4, 1, 2021, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(11, 1, 2021, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(18, 1, 2021, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(25, 1, 2021, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(1, 2, 2021, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(8, 2, 2021, sem_especial=[], tipo_dia=tipo_dia_)
 
     df_final = pd.concat(df_final)
     if df_final.empty:
