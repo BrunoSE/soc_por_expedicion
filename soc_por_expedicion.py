@@ -352,6 +352,7 @@ def mezclar_data(fecha):
     df196r_ef['delta_soc'] = df196r_ef['valor_soc_Ttec_ini'] - df196r_ef['valor_soc_Ttec_fin']
     df196r_ef['delta_Pcon'] = df196r_ef['valor_ptc_Ttec_fin'] - df196r_ef['valor_ptc_Ttec_ini']
     df196r_ef['delta_Pgen'] = df196r_ef['valor_ptg_Ttec_ini'] - df196r_ef['valor_ptg_Ttec_fin']
+    df196r_ef['delta_odom'] = df196r_ef['valor_odom_Ttec_fin'] - df196r_ef['valor_odom_Ttec_ini']
     df196r_ef.sort_values(by=['PPU', 'hora_inicio'], inplace=True)
 
     try:
