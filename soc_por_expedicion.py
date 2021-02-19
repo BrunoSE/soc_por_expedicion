@@ -161,7 +161,7 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
                                  (
                                      SELECT * FROM
                                      tracktec.eventos
-                                     WHERE fecha_evento = '2021-01-25'
+                                     WHERE fecha_evento = '{fecha_dia}'
                                      AND hora_evento IS NOT NULL AND bus_tipo = 'Electric'
                                      AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
                                  ) TABLE1
