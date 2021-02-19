@@ -92,7 +92,7 @@ def procesar_datos_consulta(cursor):
     datos = [row for row in cursor.fetchall() if row[0] is not None]
     df_ = pd.DataFrame(datos, columns=[i[0] for i in cursor.description])
     df_.set_index('id', inplace=True)
-    for columna in ['latitud', 'longitud', 'valor_soc', 'valor_ptg', 'valor_ptc']:
+    for columna in ['latitud', 'longitud', 'valor_soc', 'valor_ptg', 'valor_ptc', 'valor_odom']:
         if columna in df_.columns:
             try:
                 df_[columna] = pd.to_numeric(df_[columna])
