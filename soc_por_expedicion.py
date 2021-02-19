@@ -118,8 +118,7 @@ def consultar_soc_ttec(fecha_dia):
 
     cur1 = db1.cursor()
 
-    cur1.execute(
-                 f"""
+    cur1.execute(f"""
                  SELECT * FROM tracktec.eventos as te1 JOIN 
                  (SELECT evento_id as evento_id_soc, nombre as nombre_soc, 
                  valor as valor_soc FROM tracktec.telemetria_ 
@@ -149,48 +148,65 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
 
     cur1 = db1.cursor()
 
-    cur1.execute(
-                 f"""
-                 select * from
+    cur1.execute(f"""
+                 SELECT * FROM
                  (
-                     select * from 
+                     SELECT * FROM
                      (
-                         select * from
+                         SELECT * FROM
                          (
-                             SELECT * FROM tracktec.eventos 
-                             as te1 left JOIN 
-                                 (SELECT evento_id as evento_id_soc, nombre as nombre_soc, 
-                                 valor as valor_soc FROM tracktec.telemetria_ 
-                                 WHERE (nombre = 'SOC' and 
-                                        valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')) as t_soc 
-                                 ON te1.id=t_soc.evento_id_soc 
-                                 WHERE fecha_evento = '{fecha_dia}'
-                                 AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
-                                 AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
-                         ) as te2 left join
-                             (SELECT evento_id as evento_id_ptg, nombre as nombre_ptg, 
-                             valor as valor_ptg FROM tracktec.telemetria_ 
-                             WHERE (nombre = 'Potencia Total Generada' and 
-                                    valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')) as t_ptg 
-                             ON te2.id=t_ptg.evento_id_ptg 
-                             WHERE fecha_evento = '{fecha_dia}'
-                             AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
-                             AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
-                     ) as te3 left join 
-                         (SELECT evento_id as evento_id_ptc, nombre as nombre_ptc, 
-                         valor as valor_ptc FROM tracktec.telemetria_ 
-                         WHERE (nombre = 'Potencia Total Consumida' and 
-                                valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')) as t_ptc 
-                         ON te3.id=t_ptc.evento_id_ptc 
-                         WHERE fecha_evento = '{fecha_dia}'
-                         AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
-                         AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
-                 ) as te_final
-                 where 
+                             SELECT * FROM
+                             (
+                                 SELECT * FROM
+                                 (
+                                     SELECT * FROM
+                                     tracktec.eventos
+                                     WHERE fecha_evento = '2021-01-25'
+                                     AND hora_evento IS NOT NULL AND bus_tipo = 'Electric'
+                                     AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
+                                 ) TABLE1
+                                 LEFT JOIN
+                                     (SELECT valor AS valor_soc,
+                                     evento_id AS evento_id_soc FROM
+                                     tracktec.telemetria_
+                                     WHERE (nombre = 'SOC' AND
+                                            valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')
+                                 ) AS t_soc
+                                 ON TABLE1.id=t_soc.evento_id_soc
+                             ) TABLE2
+                             LEFT JOIN
+                                 (SELECT valor AS valor_ptg,
+                                 evento_id AS evento_id_ptg FROM
+                                 tracktec.telemetria_
+                                 WHERE (nombre = 'Potencia Total Generada' AND
+                                        valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')
+                                 ) AS t_ptg
+                             ON TABLE2.id=t_ptg.evento_id_ptg
+                         ) TABLE3
+                         LEFT JOIN
+                             (SELECT valor AS valor_ptc,
+                             evento_id AS evento_id_ptc FROM
+                             tracktec.telemetria_
+                             WHERE (nombre = 'Potencia Total Consumida' AND
+                                    valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')
+                             ) AS t_ptc
+                         ON TABLE3.id=t_ptc.evento_id_ptc
+                     ) TABLE4
+                     LEFT JOIN
+                         (SELECT valor AS valor_odometro,
+                         evento_id AS evento_id_odo FROM
+                         tracktec.telemetria_
+                         WHERE (nombre = 'Odómetro' AND
+                                valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')
+                     ) AS t_odo
+                     ON TABLE4.id=t_odo.evento_id_odo
+                 ) AS TABLE5
+                 WHERE
                  valor_soc IS NOT NULL OR
                  valor_ptg IS NOT NULL OR
-                 valor_ptc IS NOT NULL
-                 order by patente;
+                 valor_ptc IS NOT NULL OR
+                 valor_odometro IS NOT NULL
+                 ORDER BY patente;
                  """
                  )
 
