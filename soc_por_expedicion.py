@@ -119,14 +119,14 @@ def consultar_soc_ttec(fecha_dia):
     cur1 = db1.cursor()
 
     cur1.execute(f"""
-                 SELECT * FROM tracktec.eventos as te1 JOIN 
-                 (SELECT evento_id as evento_id_soc, nombre as nombre_soc, 
-                 valor as valor_soc FROM tracktec.telemetria_ 
-                 WHERE (nombre = 'SOC' and 
-                        valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')) as t_soc 
-                 ON te1.id=t_soc.evento_id_soc 
+                 SELECT * FROM tracktec.eventos as te1 JOIN
+                 (SELECT evento_id as evento_id_soc, nombre as nombre_soc,
+                 valor as valor_soc FROM tracktec.telemetria_
+                 WHERE (nombre = 'SOC' and
+                        valor REGEXP '^[\\-]?[0-9]+\\.?[0-9]*$')) as t_soc
+                 ON te1.id=t_soc.evento_id_soc
                  WHERE fecha_evento = '{fecha_dia}'
-                 AND hora_evento IS NOT NULL AND bus_tipo = 'Electric' 
+                 AND hora_evento IS NOT NULL AND bus_tipo = 'Electric'
                  AND PATENTE IS NOT NULL AND NOT (patente REGEXP '^[0-9]+')
                  ORDER BY patente;
                  """
@@ -144,7 +144,8 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
     db1 = MySQLdb.connect(host=ip_bd_edu,
                           user="brunom",
                           passwd="Manzana",
-                          db="tracktec")
+                          db="tracktec",
+                          charset='utf8')
 
     cur1 = db1.cursor()
 
