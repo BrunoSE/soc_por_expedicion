@@ -203,10 +203,7 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
                      ON TABLE4.id=t_odo.evento_id_odo
                  ) AS TABLE5
                  WHERE
-                 valor_soc IS NOT NULL OR
-                 valor_ptg IS NOT NULL OR
-                 valor_ptc IS NOT NULL OR
-                 valor_odometro IS NOT NULL
+                 valor_soc IS NOT NULL
                  ORDER BY patente;
                  """
                  )
@@ -325,7 +322,7 @@ def mezclar_data(fecha):
                              right_on='fecha_hora_evento_Ttec_ini',
                              left_by='PPU', right_by='patente_Ttec_ini',
                              suffixes=['', '_Ttec_ini2'],
-                             tolerance=timedelta(minutes=1),
+                             tolerance=timedelta(minutes=1, seconds=5),
                              direction='nearest')
 
     df196r_e.sort_values(by=['hora_fin'], inplace=True)
@@ -336,7 +333,7 @@ def mezclar_data(fecha):
                               right_on='fecha_hora_evento_Ttec_fin',
                               left_by='PPU', right_by='patente_Ttec_fin',
                               suffixes=['', '_Ttec_fin2'],
-                              tolerance=timedelta(minutes=1),
+                              tolerance=timedelta(minutes=1, seconds=5),
                               direction='nearest')
 
     # agregar primera y ultima posicion a mi resumen diario de gps
