@@ -194,7 +194,7 @@ def consultar_transmisiones_tracktec_por_dia(fecha_dia):
                          ON TABLE3.id=t_ptc.evento_id_ptc
                      ) TABLE4
                      LEFT JOIN
-                         (SELECT valor AS valor_odometro,
+                         (SELECT valor AS valor_odom,
                          evento_id AS evento_id_odo FROM
                          tracktec.telemetria_
                          WHERE (nombre = 'Odómetro' AND
@@ -445,7 +445,7 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
 if __name__ == '__main__':
     mantener_log()
 
-    reemplazar_data_ttec = False
+    reemplazar_data_ttec = True
     reemplazar_resumen = False
     # pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 6, 7])
@@ -464,6 +464,6 @@ if __name__ == '__main__':
     # pipeline(11, 1, 2021, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(18, 1, 2021, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(25, 1, 2021, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(1, 2, 2021, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(1, 2, 2021, reemplazar_data_ttec, reemplazar_resumen)
     pipeline(8, 2, 2021, reemplazar_data_ttec, reemplazar_resumen)
     logger.info('Listo todo')
