@@ -445,7 +445,7 @@ def pipeline(dia_ini, mes, anno, replace_data_ttec=False, replace_resumen=False,
 if __name__ == '__main__':
     mantener_log()
 
-    reemplazar_data_ttec = True
+    reemplazar_data_ttec = False
     reemplazar_resumen = False
     # pipeline(7, 9, 2020, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(14, 9, 2020, reemplazar_data_ttec, reemplazar_resumen, sem_especial=[1, 2, 3, 6, 7])
@@ -465,5 +465,8 @@ if __name__ == '__main__':
     # pipeline(18, 1, 2021, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(25, 1, 2021, reemplazar_data_ttec, reemplazar_resumen)
     # pipeline(1, 2, 2021, reemplazar_data_ttec, reemplazar_resumen)
-    pipeline(8, 2, 2021, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(1, 2, 2021, reemplazar_data_ttec, reemplazar_resumen)
+    # pipeline(8, 2, 2021, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(15, 2, 2021, reemplazar_data_ttec, reemplazar_resumen)
+    pipeline(22, 2, 2021, reemplazar_data_ttec, reemplazar_resumen)
     logger.info('Listo todo')

@@ -977,7 +977,7 @@ def graficar_semana(dia_ini_, mes_, anno_, sem_especial=[], tipo_dia_='Laboral')
     os.chdir('..')
 
 
-def graficar_varias_semanas(tipo_dia_='Laboral'):
+def graficar_varias_semanas(tipo_dia_='Laboral', solo_guardar_data=False):
     global primera_semana
     global ultima_semana
     global df_final
@@ -1000,6 +1000,8 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     g_pipeline(25, 1, 2021, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(1, 2, 2021, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(8, 2, 2021, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(15, 2, 2021, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(22, 2, 2021, sem_especial=[], tipo_dia=tipo_dia_)
 
     df_final = pd.concat(df_final)
     if df_final.empty:
@@ -1028,17 +1030,17 @@ def graficar_varias_semanas(tipo_dia_='Laboral'):
     os.chdir(carpeta_guardar_graficos)
     df_final.to_excel(f'data_{tipo_dia_}_{carpeta_guardar_graficos}.xlsx', index=False)
     df_final.to_parquet(f'data_{tipo_dia_}_{carpeta_guardar_graficos}.parquet', compression='gzip')
+    if not solo_guardar_data:
+        nombre_ = nombre_.replace('_', '-')
+        logger.info(f'Graficando {tipo_dia_} {nombre_}')
 
-    nombre_ = nombre_.replace('_', '-')
-    logger.info(f'Graficando {tipo_dia_} {nombre_}')
-
-    graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
-    graficar('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
-    # mejor hacer los dos juntos graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=nombre_)
-    # mejor hacer los dos juntos  graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
-    graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
-    graficar_soc_tv(tipo_dia=tipo_dia_, nombre=nombre_)
-    graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
+        graficar('tiempo_viaje', tipo_dia=tipo_dia_, nombre=nombre_)
+        graficar('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+        # mejor hacer los dos juntos graficar('delta_Pcon', tipo_dia=tipo_dia_, nombre=nombre_)
+        # mejor hacer los dos juntos  graficar('delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
+        graficar_boxplot('delta_soc', tipo_dia=tipo_dia_, nombre=nombre_)
+        graficar_soc_tv(tipo_dia=tipo_dia_, nombre=nombre_)
+        graficar_potencias_2('delta_Pcon', 'delta_Pgen', tipo_dia=tipo_dia_, nombre=nombre_)
     os.chdir('..')
 
 
@@ -1050,7 +1052,7 @@ def main():
         # graficar_semana(14, 9, 2020, sem_especial=[1, 2, 3, 6, 7], tipo_dia_=tipo_dia_interes)
 
         # revisar que graficar_varias_semanas tenga estas mismas semanas
-        graficar_varias_semanas(tipo_dia_=tipo_dia_interes)
+        graficar_varias_semanas(tipo_dia_=tipo_dia_interes, solo_guardar_data=True)
         logger.info(f'Listo dias tipo {tipo_dia_interes}')
 
     logger.info('Listo todo')
