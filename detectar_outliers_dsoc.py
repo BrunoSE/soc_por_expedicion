@@ -8,7 +8,7 @@ from matplotlib.colors import ListedColormap
 carpeta = 'graficos_2020_11_02_2021_02_22'
 dibujar_3d = True
 dibujar_2d = True
-archivo_data = f'data_Laboral_{carpeta}.parquet'
+archivo_data = f'../data_Laboral_{carpeta}.parquet'
 
 os.chdir(carpeta)
 if not os.path.isdir('Anomalias_dsoc'):
@@ -24,8 +24,8 @@ df = pd.read_parquet(archivo_data)
 df = df[['distancia_recorrida', 'delta_soc', 'tiempo_viaje',
          'codigo_Ruta', 'MH_inicio', 'PPU', 'valor_soc_Ttec_ini',
          'Indice_mensual', 'delta_Pcon', 'delta_Pgen', 'V_Comercial']]
-
 rutas = df['codigo_Ruta'].unique()
+
 
 
 def mh_a_int(x):
@@ -73,6 +73,8 @@ colores = ['#000000',
            "#af94e2",
            "#513400"]
 
+col_dfcotas = ['MH', 'perc25', 'perc75', 'IQR', 'cota_debil', 'cota',
+                    'n_outlier_debil', 'n_outlier', 'ppu_debil', 'ppu_outlier']
 
 if dibujar_2d:
 
@@ -212,7 +214,9 @@ if dibujar_3d:
         texto_ejez = 'Potencia Generada [kWh]'
 
     rutas_outlier = []
+    df_cotas = {}
     for ruta in rutas:
+        data_cotas_ruta = []
         print(f'Graficando 3d {variable} {ruta}')
         for i in range(len(cortes) - 1):
             dfx = df.loc[(df['MH_inicio2'] >= cortes[i]) & (df['MH_inicio2'] < cortes[i + 1]) & (df['codigo_Ruta'] == ruta)].copy()
@@ -248,17 +252,9 @@ if dibujar_3d:
                                  margin=dict(b=0, l=0, r=0, t=25)))
 
             fig6.update_layout(title={'y': 0.9,
-                                      'x': 0.5,
-                                      'xanchor': 'center',
-                                      'yanchor': 'top'})
-
-            dfx['Outlier'] = 'circle'
-            j = 0
-
-            mhsx_ = dfx['MH_inicio2'].unique()
-            mhsx_.sort()
-            vale_la_pena = False
-
+                          'x': 0.5,
+                          'xanchor': 'center',
+                          'yanchor': 'top'})
             fig6.add_trace(go.Scatter3d(x=[0],
                                         y=[0],
                                         z=[0],
@@ -269,39 +265,53 @@ if dibujar_3d:
                                         marker=dict(size=1,
                                                     color='#ffffff'
                                                     )))
+            j = 0
+            dfx['Outlier'] = 'circle'
+            mhsx_ = dfx['MH_inicio2'].unique()
+            mhsx_.sort()
+            vale_la_pena_dibujar = False
 
             for mh_ in mhsx_:
                 dfx_ = dfx.loc[dfx['MH_inicio2'] == mh_]
-
-                IQR = dfx_[variable].quantile(.75) - dfx_[variable].quantile(.25)
-                cota = dfx_[variable].quantile(.75) + 3 * IQR
-                cota2 = dfx_[variable].quantile(.75) + 5 * IQR
+                perc25 = dfx_[variable].quantile(.25)
+                perc75 = dfx_[variable].quantile(.75)
+                IQR = perc75 - perc25
+                cota = perc75 + 3 * IQR
+                cota2 = perc75 + 5 * IQR
 
                 dfx.loc[(dfx['MH_inicio2'] == mh_) & (dfx[variable] > cota), 'Outlier'] = 'diamond'
                 dfx.loc[(dfx['MH_inicio2'] == mh_) & (dfx[variable] > cota2), 'Outlier'] = 'x'
 
                 dfx_ = dfx.loc[dfx['MH_inicio2'] == mh_]
+                
+                n_outlier_debil = len(dfx_.loc[dfx_['Outlier'] == 'diamond'].index)
+                n_outlier_notorio = len(dfx_.loc[dfx_['Outlier'] == 'x'].index)
+                ppus_debil = str(dfx_.loc[dfx_['Outlier'] == 'diamond', 'PPU'].unique().tolist())
+                ppus_notorio = str(dfx_.loc[dfx_['Outlier'] == 'x', 'PPU'].unique().tolist())
+                
+                data_cotas_ruta.append([Diccionario_MH[mh_], perc25, perc75, IQR, cota, cota2, 
+                                         n_outlier_debil, n_outlier_notorio, ppus_debil, ppus_notorio])
 
+                fig6.add_trace(go.Scatter3d(x=dfx_['distancia_recorrida'],
+                            y=dfx_['tiempo_viaje'],
+                            z=dfx_[variable],
+                            text=dfx_['texto'],
+                            hoverinfo='text',
+                            mode='markers',
+                            name=Diccionario_MH[mh_],
+                            marker=dict(size=8,
+                                        color=colores[j % len(colores)],
+                                        opacity=1,
+                                        symbol=dfx_['Outlier']
+                                        )))
                 # Condicion para dibujar: tener outliers "debil" (diamond) o "notorio" (x)
                 if len(dfx_.loc[dfx_['Outlier'] == 'x'].index) > 2:
                     print(f'{ruta} {int(cortes[i] / 2)}_{int(cortes[i + 1] / 2)}hrs tiene outliers notorios, se va a hacer gráfico 3d')
-                    vale_la_pena = True
+                    vale_la_pena_dibujar = True
 
-                fig6.add_trace(go.Scatter3d(x=dfx_['distancia_recorrida'],
-                                            y=dfx_['tiempo_viaje'],
-                                            z=dfx_[variable],
-                                            text=dfx_['texto'],
-                                            hoverinfo='text',
-                                            mode='markers',
-                                            name=Diccionario_MH[mh_],
-                                            marker=dict(size=8,
-                                                        color=colores[j % len(colores)],
-                                                        opacity=1,
-                                                        symbol=dfx_['Outlier']
-                                                        )))
                 j += 1
 
-            if vale_la_pena:
+            if vale_la_pena_dibujar:
 
                 fig6.update_layout(scene_aspectmode='manual',
                                    scene_aspectratio=dict(x=1.2, y=1.6, z=0.8),
@@ -313,7 +323,9 @@ if dibujar_3d:
                 fig6.write_html(f'{variable}_{ruta}_{int(cortes[i] / 2)}_{int(cortes[i + 1] / 2)}hrs.html',
                                 config={'scrollZoom': True, 'displayModeBar': True})
 
+
             rutas_outlier.append(dfx.loc[dfx['Outlier'].isin(['x', 'diamond']), ['Indice_mensual', 'Outlier']].copy())
+        df_cotas[ruta] = pd.DataFrame(data_cotas_ruta, columns=col_dfcotas)
 
     df_outlier = pd.concat(rutas_outlier)
     df_outlier.loc[df_outlier['Outlier'] == 'x', 'Outlier'] = 'Notorio'
@@ -323,3 +335,11 @@ if dibujar_3d:
     df = df.merge(df_outlier, on='Indice_mensual', suffixes=['', '_o'])
     df['Mes'] = df['Fecha'].dt.month
     df.to_excel(f'Outliers_{variable}.xlsx', index=False)
+
+    # for ruta in df_cotas:
+    #     df_cotas[ruta].to_excel(f'Cotas_{ruta}.xlsx', index=False)
+
+    writer = pd.ExcelWriter('Cotas_resumen.xlsx', engine='xlsxwriter')
+    for ruta in df_cotas:
+        df_cotas[ruta].to_excel(writer, sheet_name=str(ruta))
+    writer.save()
