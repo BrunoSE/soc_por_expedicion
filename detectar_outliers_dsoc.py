@@ -5,7 +5,8 @@ import os
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 
-carpeta = 'graficos_2020_11_02_2021_02_22'
+carpeta = 'graficos_2020_11_02_2020_11_23'
+print(f"Leyendo datos en carpeta {carpeta}")
 dibujar_3d = True
 dibujar_2d = True
 archivo_data = f'../data_Laboral_{carpeta}.parquet'
