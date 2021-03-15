@@ -1002,6 +1002,7 @@ def graficar_varias_semanas(tipo_dia_='Laboral', solo_guardar_data=False):
     g_pipeline(8, 2, 2021, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(15, 2, 2021, sem_especial=[], tipo_dia=tipo_dia_)
     g_pipeline(22, 2, 2021, sem_especial=[], tipo_dia=tipo_dia_)
+    g_pipeline(1, 3, 2021, sem_especial=[], tipo_dia=tipo_dia_)
 
     df_final = pd.concat(df_final)
     if df_final.empty:
