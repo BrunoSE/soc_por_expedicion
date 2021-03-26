@@ -11,7 +11,7 @@ global logger
 global file_format
 
 
-mes_de_interes  = 2
+mes_de_interes  = 3
 os.chdir('Cruce_Sonda_Ttec')
 
 
